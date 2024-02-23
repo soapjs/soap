@@ -9,7 +9,7 @@ Yes, we know there are many frameworks out there, and they are excellent. Howeve
 Everything you need to know can be found at [SoapJS Documentation](https://docs.soapjs.com). If you want to install the package immediately, use the command `npm i @soapjs/soap`. However, we recommend familiarizing yourself with the documentation and CLI at the provided address.
 
 ## Issues
-If you encounter any issues, please read the HOW-TO-ISSUE section and feel free to report them.
+If you encounter any issues, please feel free to report them [here](https://github.com/soapjs/soap/issues/new/choose).
 
 ## Contact
 For any questions, collaboration interests, or support needs, you can contact us through the following:
