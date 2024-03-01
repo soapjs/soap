@@ -1,6 +1,6 @@
 {
   "name": "@soapjs/soap",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Lightweight, clean architecture-based framework designed to streamline the development of modular and maintainable web applications",
   "homepage": "https://docs.soapjs.com",
   "repository": "https://github.com/soapjs/soap",
@@ -11,12 +11,24 @@
     "url": "https://opencollective.com/soapjs"
   },
   "license": "MIT",
-  "author": "Radoslaw Kamysz",
+  "author": "Radoslaw Kamysz <radoslaw.kamysz@gmail.com>",
+  "keywords": [
+    "clean",
+    "architecture",
+    "clean architecture",
+    "api design",
+    "framework",
+    "code generation",
+    "framework",
+    "typescript",
+    "microservices",
+    "backend"
+  ],
   "scripts": {
     "test:unit": "jest --config=jest.config.unit.js",
     "clean": "rm -rf ./build",
-    "build": "yarn clean && tsc -b",
-    "prepublish": "yarn clean && tsc --project tsconfig.build.json",
+    "build": "npm run clean && tsc -b",
+    "prepublish": "npm run clean && tsc --project tsconfig.build.json",
     "lint": "eslint . --ext .ts",
     "lint-fix": "eslint . --ext .ts --fix",
     "format-check": "prettier --check \"src/\"",
