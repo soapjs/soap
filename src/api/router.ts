@@ -24,65 +24,63 @@ type WebFrameworkMethods<T = unknown> = {
 };
 
 export abstract class Router {
-  constructor(protected framework: WebFrameworkMethods) {}
+  constructor(protected framework: WebFrameworkMethods) { }
 
-  public mount(...routes: Route[]) {
-    for (const route of routes) {
-      switch (route.method.toUpperCase()) {
-        case "POST": {
-          if (Array.isArray(route.path)) {
-            route.path.forEach((path) => {
-              this.framework.post(path, route.createPipeline());
-            });
-          } else {
-            this.framework.post(<string>route.path, route.createPipeline());
-          }
-          break;
+  public mount(route: Route) {
+    switch (route.method.toUpperCase()) {
+      case "POST": {
+        if (Array.isArray(route.path)) {
+          route.path.forEach((path) => {
+            this.framework.post(path, route.createPipeline());
+          });
+        } else {
+          this.framework.post(<string>route.path, route.createPipeline());
         }
-        case "PATCH": {
-          if (Array.isArray(route.path)) {
-            route.path.forEach((path) => {
-              this.framework.patch(path, route.createPipeline());
-            });
-          } else {
-            this.framework.patch(<string>route.path, route.createPipeline());
-          }
-          break;
+        break;
+      }
+      case "PATCH": {
+        if (Array.isArray(route.path)) {
+          route.path.forEach((path) => {
+            this.framework.patch(path, route.createPipeline());
+          });
+        } else {
+          this.framework.patch(<string>route.path, route.createPipeline());
         }
-        case "GET": {
-          if (Array.isArray(route.path)) {
-            route.path.forEach((path) => {
-              this.framework.get(path, route.createPipeline());
-            });
-          } else {
-            this.framework.get(<string>route.path, route.createPipeline());
-          }
-          break;
+        break;
+      }
+      case "GET": {
+        if (Array.isArray(route.path)) {
+          route.path.forEach((path) => {
+            this.framework.get(path, route.createPipeline());
+          });
+        } else {
+          this.framework.get(<string>route.path, route.createPipeline());
         }
-        case "PUT": {
-          if (Array.isArray(route.path)) {
-            route.path.forEach((path) => {
-              this.framework.put(path, route.createPipeline());
-            });
-          } else {
-            this.framework.put(<string>route.path, route.createPipeline());
-          }
-          break;
+        break;
+      }
+      case "PUT": {
+        if (Array.isArray(route.path)) {
+          route.path.forEach((path) => {
+            this.framework.put(path, route.createPipeline());
+          });
+        } else {
+          this.framework.put(<string>route.path, route.createPipeline());
         }
-        case "DELETE": {
-          if (Array.isArray(route.path)) {
-            route.path.forEach((path) => {
-              this.framework.delete(path, route.createPipeline());
-            });
-          } else {
-            this.framework.delete(<string>route.path, route.createPipeline());
-          }
-          break;
+        break;
+      }
+      case "DELETE": {
+        if (Array.isArray(route.path)) {
+          route.path.forEach((path) => {
+            this.framework.delete(path, route.createPipeline());
+          });
+        } else {
+          this.framework.delete(<string>route.path, route.createPipeline());
         }
-        default: {
-          // TODO: fix it
-          throw new Error("Method not defined");
-        }
+        break;
+      }
+      default: {
+        // TODO: fix it
+        throw new Error("Method not defined");
       }
     }
   }
