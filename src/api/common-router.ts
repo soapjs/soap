@@ -1,28 +1,5 @@
 import { Route } from "./route";
-import { Router } from "./router";
-
-type WebFrameworkMethods<T = unknown> = {
-  post: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  put: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  patch: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  get: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  delete: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-};
+import { Router, WebFrameworkMethods } from "./router";
 
 export abstract class CommonRouter implements Router {
   constructor(protected framework: WebFrameworkMethods) {}

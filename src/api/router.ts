@@ -1,6 +1,6 @@
 import { Route } from "./route";
 
-type WebFrameworkMethods<T = unknown> = {
+export type WebFrameworkMethods<T = unknown> = {
   post: (
     path: string | string[],
     handler: (...args: unknown[]) => Promise<T>
