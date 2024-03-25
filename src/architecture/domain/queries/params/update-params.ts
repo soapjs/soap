@@ -1,4 +1,4 @@
-import { Where } from '../../where/where';
+import { Where } from "../../where";
 
 export enum UpdateMethod {
   UpdateOne,
@@ -25,7 +25,10 @@ export class UpdateParams<UpdateType = unknown> {
    *
    * @returns {UpdateParams} An instance of UpdateParams.
    */
-  public static createUpdateMany<UpdateType = unknown>(update: UpdateType, where: Where) {
+  public static createUpdateMany<UpdateType = unknown>(
+    update: UpdateType,
+    where: Where
+  ) {
     return new UpdateParams([update], [where], [UpdateMethod.UpdateMany]);
   }
 
@@ -60,7 +63,10 @@ export class UpdateParams<UpdateType = unknown> {
    *
    * @returns {UpdateParams} An instance of UpdateParams.
    */
-  public static createUpdateOne<UpdateType = unknown>(update: UpdateType, where: Where) {
+  public static createUpdateOne<UpdateType = unknown>(
+    update: UpdateType,
+    where: Where
+  ) {
     return new UpdateParams([update], [where], [UpdateMethod.UpdateOne]);
   }
 

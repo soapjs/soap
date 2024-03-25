@@ -1,4 +1,4 @@
-import { Where } from '../../where/where';
+import { Where } from "../../where";
 
 /**
  * Represents the parameters for removing.

@@ -1,5 +1,5 @@
-import { Sort } from '../../types';
-import { Where } from '../../where/where';
+import { Sort } from "../../types";
+import { Where } from "../../where";
 
 /**
  * Represents the parameters for finding.

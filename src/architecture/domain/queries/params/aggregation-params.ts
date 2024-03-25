@@ -1,5 +1,5 @@
-import { Filter, Sort } from '../../types';
-import { Where } from '../../where/where';
+import { Filter, Sort } from "../../types";
+import { Where } from "../../where";
 
 /**
  * Represents the parameters for aggregation.
@@ -31,7 +31,8 @@ export class AggregationParams {
     count?: string;
     where?: Where;
   }): AggregationParams {
-    const { groupBy, filterBy, sort, sum, average, min, max, count, where } = options;
+    const { groupBy, filterBy, sort, sum, average, min, max, count, where } =
+      options;
     return new AggregationParams(
       groupBy,
       filterBy,
