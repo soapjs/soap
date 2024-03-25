@@ -3,12 +3,12 @@ import { Result } from "../architecture";
 import { RouteResponse, RouteRequest } from "./api.types";
 
 export abstract class RouteIO<
-  RequestType extends RouteRequest = RouteRequest,
-  ResponseType extends RouteResponse = RouteResponse,
-  InputType = unknown,
-  OutputType extends Result = Result
+  RequestType = RouteRequest,
+  ResponseType = RouteResponse,
+  InputType = any,
+  OutputType = Result<any>
 > {
-  public abstract toResponse?(output: OutputType): ResponseType;
+  public abstract toResponse?(output?: OutputType): ResponseType;
   public abstract fromRequest?(
     request: RequestType | unknown,
     ...args: unknown[]

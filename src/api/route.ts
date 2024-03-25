@@ -27,58 +27,7 @@ export class Route {
     public readonly options?: RouteOptions
   ) {}
 
-  createPipeline() {
-    return async function (request, response) {
-      const { hooks, validators, authorization, io, handler } = this;
 
-      if (authorization) {
-        const auth = authorization(request);
-
-        if (auth === false) {
-          return response.status(401).send("Unauthorized");
-        }
-      }
-
-      if (validators?.request) {
-        const { valid, message, code, errors } = validators.request(request);
-
-        if (!valid) {
-          return response.status(code || 400).send({
-            message,
-            errors,
-          });
-        }
-      }
-
-      try {
-        let args;
-        let input;
-
-        if (hooks?.pre) {
-          args = hooks.pre(request);
-        }
-
-        if (io?.fromRequest) {
-          input = io.fromRequest(request, args);
-        }
-
-        const output = await handler(input);
-
-        if (hooks?.post) {
-          hooks.post(output);
-        }
-
-        if (io?.toResponse) {
-          const r = io.toResponse(output);
-          response.status(r.status).send(r.body);
-        } else {
-          response.status(200).send("ok");
-        }
-      } catch (error) {
-        response.status(500).send(error);
-      }
-    };
-  }
 }
 
 /**

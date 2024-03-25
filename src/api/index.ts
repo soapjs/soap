@@ -3,6 +3,7 @@ export * from "./api.errors";
 export * from "./api.types";
 export * from "./route";
 export * from "./router";
+export * from "./common-router";
 export * from "./route-io";
 export * from "./singleton";
 export * from "./container";

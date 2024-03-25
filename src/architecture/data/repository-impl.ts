@@ -15,7 +15,7 @@ import { DataContext } from "./data-context";
  *
  * Note: This repository should be used when we do not want to provide methods to modify the contents of collections in the database.
  */
-export class RepositoryImpl<EntityType, DocumentType>
+export class RepositoryImpl<EntityType, DocumentType = unknown>
   implements Repository<EntityType, DocumentType>
 {
   /**
