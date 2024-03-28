@@ -25,12 +25,7 @@ export type WebFrameworkMethods<T = unknown> = {
   ) => void;
 };
 
-export abstract class Router<ContainerType = any, ConfigType = any> {
-  constructor(
-    protected container: ContainerType,
-    protected config: ConfigType
-  ) {}
-
+export abstract class Router {
   abstract mount(data: Route | Route[]);
   abstract configure(...args: unknown[]): void;
 }
