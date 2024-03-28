@@ -1,6 +1,7 @@
 export * from "./api.enums";
 export * from "./api.errors";
 export * from "./api.types";
+export * from "./dependencies";
 export * from "./route";
 export * from "./router";
 export * from "./common-router";

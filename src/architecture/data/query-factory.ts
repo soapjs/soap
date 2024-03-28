@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   AggregationParams,
   CountParams,
@@ -20,7 +21,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the find operation.
    */
-  public abstract createFindQuery(params: FindParams): Query;
+  public abstract createFindQuery(params: FindParams, ...args: any[]): Query;
 
   /**
    * Builds a query for count operations.
@@ -29,7 +30,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the count operation.
    */
-  public abstract createCountQuery(params: CountParams): Query;
+  public abstract createCountQuery(params: CountParams, ...args: any[]): Query;
 
   /**
    * Builds a query for update operations.
@@ -44,7 +45,8 @@ export abstract class QueryFactory {
   public abstract createUpdateQuery<UpdateType = unknown>(
     updates: UpdateType[],
     where: Where[],
-    methods: UpdateMethod[]
+    methods: UpdateMethod[],
+    ...args: any[]
   ): Query;
 
   /**
@@ -54,7 +56,10 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the remove operation.
    */
-  public abstract createRemoveQuery(params: RemoveParams): Query;
+  public abstract createRemoveQuery(
+    params: RemoveParams,
+    ...args: any[]
+  ): Query;
 
   /**
    * Builds a query for aggregation operations.
@@ -63,5 +68,8 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the aggregation operation.
    */
-  public abstract createAggregationQuery(params: AggregationParams): Query;
+  public abstract createAggregationQuery(
+    params: AggregationParams,
+    ...args: any[]
+  ): Query;
 }

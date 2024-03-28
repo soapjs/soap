@@ -1,8 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Route } from "./route";
 import { Router, WebFrameworkMethods } from "./router";
 
-export abstract class CommonRouter implements Router {
-  constructor(protected framework: WebFrameworkMethods) {}
+export abstract class CommonRouter<
+  ContainerType = any,
+  ConfigType = any
+> extends Router<ContainerType, ConfigType> {
+  constructor(
+    protected framework: WebFrameworkMethods,
+    protected container: ContainerType,
+    protected config: ConfigType
+  ) {
+    super(container, config);
+  }
 
   protected createPipeline() {
     return async function (request, response) {

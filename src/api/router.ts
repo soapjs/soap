@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { Route } from "./route";
 
 export type WebFrameworkMethods<T = unknown> = {
@@ -23,7 +25,12 @@ export type WebFrameworkMethods<T = unknown> = {
   ) => void;
 };
 
-export interface Router {
-  mount(data: Route | Route[]);
-  configure(...args: unknown[]): void;
+export abstract class Router<ContainerType = any, ConfigType = any> {
+  constructor(
+    protected container: ContainerType,
+    protected config: ConfigType
+  ) {}
+
+  abstract mount(data: Route | Route[]);
+  abstract configure(...args: unknown[]): void;
 }
