@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Failure } from './failure';
+import { Failure } from "./failure";
 
 /**
  * The class represents the result of executing a use case
@@ -9,7 +9,7 @@ import { Failure } from './failure';
  */
 export class Result<ContentType = void, ErrorType = Error> {
   public readonly content: ContentType;
-  public readonly failure: Failure<ErrorType> | undefined;
+  public readonly failure: Failure<ErrorType>;
 
   /**
    * Create instances of the class Result
@@ -18,7 +18,10 @@ export class Result<ContentType = void, ErrorType = Error> {
    * @private
    * @param data
    */
-  private constructor(data: { content?: ContentType; failure?: Failure<ErrorType> }) {
+  private constructor(data: {
+    content?: ContentType;
+    failure?: Failure<ErrorType>;
+  }) {
     const { content, failure } = data || {};
     if (content !== undefined && content !== null) {
       this.content = content;
@@ -32,7 +35,7 @@ export class Result<ContentType = void, ErrorType = Error> {
    * @returns {boolean}
    */
   public get isFailure(): boolean {
-    return !!this.failure;
+    return this.failure instanceof Failure;
   }
 
   /**
@@ -44,8 +47,8 @@ export class Result<ContentType = void, ErrorType = Error> {
    */
   public static withContent<ContentType>(
     content: ContentType
-  ): Result<ContentType, null> {
-    return new Result<ContentType, null>({ content });
+  ): Result<ContentType, any> {
+    return new Result<ContentType, any>({ content });
   }
 
   /**
@@ -67,18 +70,18 @@ export class Result<ContentType = void, ErrorType = Error> {
    */
   public static withFailure<ErrorType = Error>(
     failure: Failure<ErrorType> | Error | string
-  ): Result<null, ErrorType> {
+  ): Result<any, ErrorType> {
     if (failure instanceof Failure) {
-      return new Result<null, ErrorType>({ failure });
+      return new Result<any, ErrorType>({ failure });
     }
 
-    if (typeof failure === 'string') {
-      return new Result<null, ErrorType>({
+    if (typeof failure === "string") {
+      return new Result<any, ErrorType>({
         failure: Failure.withMessage(failure) as Failure<ErrorType>,
       });
     }
 
-    return new Result<null, ErrorType>({
+    return new Result<any, ErrorType>({
       failure: Failure.fromError<ErrorType>(failure as ErrorType),
     });
   }
