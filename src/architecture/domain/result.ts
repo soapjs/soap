@@ -2,14 +2,13 @@
 import { Failure } from "./failure";
 
 /**
- * The class represents the result of executing a use case
- * or repository operation.
+ * The class represents the result of executing an operation.
  * The result may return a Failure object or the typed content.
  * @class
  */
-export class Result<ContentType = void, ErrorType = Error> {
+export class Result<ContentType = void> {
   public readonly content: ContentType;
-  public readonly failure: Failure<ErrorType>;
+  public readonly failure: Failure;
 
   /**
    * Create instances of the class Result
@@ -18,12 +17,9 @@ export class Result<ContentType = void, ErrorType = Error> {
    * @private
    * @param data
    */
-  private constructor(data: {
-    content?: ContentType;
-    failure?: Failure<ErrorType>;
-  }) {
+  private constructor(data?: { content?: ContentType; failure?: Failure }) {
     const { content, failure } = data || {};
-    if (content !== undefined && content !== null) {
+    if (content) {
       this.content = content;
     }
     if (failure) {
@@ -47,18 +43,18 @@ export class Result<ContentType = void, ErrorType = Error> {
    */
   public static withContent<ContentType>(
     content: ContentType
-  ): Result<ContentType, any> {
-    return new Result<ContentType, any>({ content });
+  ): Result<ContentType> {
+    return new Result<ContentType>({ content });
   }
 
   /**
    * Create instance of the Result class with empty content
    *
    * @static
-   * @returns {Result<void>}
+   * @returns {Result<ContentType>}
    */
-  public static withoutContent(): Result<void> {
-    return new Result({});
+  public static withoutContent<ContentType = any>(): Result<ContentType> {
+    return new Result<ContentType>();
   }
 
   /**
@@ -68,21 +64,25 @@ export class Result<ContentType = void, ErrorType = Error> {
    * @param {Failure | Error} failure
    * @returns
    */
-  public static withFailure<ErrorType = Error>(
-    failure: Failure<ErrorType> | Error | string
-  ): Result<any, ErrorType> {
+  public static withFailure<ContentType = any>(
+    failure: Failure | Error | string
+  ): Result<ContentType> {
     if (failure instanceof Failure) {
-      return new Result<any, ErrorType>({ failure });
+      return new Result<ContentType>({ failure });
     }
 
     if (typeof failure === "string") {
-      return new Result<any, ErrorType>({
-        failure: Failure.withMessage(failure) as Failure<ErrorType>,
+      return new Result<ContentType>({
+        failure: Failure.withMessage(failure),
       });
     }
 
-    return new Result<any, ErrorType>({
-      failure: Failure.fromError<ErrorType>(failure as ErrorType),
-    });
+    if (failure instanceof Error) {
+      return new Result<ContentType>({
+        failure: Failure.fromError(failure),
+      });
+    }
+
+    throw new Error("Wrong Failure type");
   }
 }

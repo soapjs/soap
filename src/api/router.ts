@@ -2,30 +2,19 @@
 
 import { Route } from "./route";
 
-export type WebFrameworkMethods<T = unknown> = {
-  post: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  put: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  patch: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  get: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-  delete: (
-    path: string | string[],
-    handler: (...args: unknown[]) => Promise<T>
-  ) => void;
-};
+/**
+ * Interface for the router.
+ */
+export interface Router {
+  /**
+   * Mounts a route or a set of routes.
+   * @param data Route or set of routes to mount.
+   */
+  mount(data: Route | Route[]): void;
 
-export abstract class Router {
-  abstract mount(data: Route | Route[]);
-  abstract configure(...args: unknown[]): void;
+  /**
+   * Configures the router.
+   * @param args Configuration arguments.
+   */
+  configure(...args: unknown[]): void;
 }

@@ -3,16 +3,16 @@
  * in executing a use case or repository operation.
  * @class
  */
-export class Failure<T = Error> {
+export class Failure {
   /**
    * @private
    * @constructor
-   * @param {T} error
-   * @param {boolean} throwable
-   * @param {boolean} reportable
+   * @param {Error} error - The error object representing the failure.
+   * @param {boolean} throwable - Indicates whether the failure should be thrown (true) or not (false).
+   * @param {boolean} reportable - Indicates whether the failure should be reported for analysis (true) or not (false).
    */
   private constructor(
-    public readonly error: T,
+    public readonly error: Error,
     public readonly throwable: boolean,
     public readonly reportable: boolean
   ) {}
@@ -21,17 +21,17 @@ export class Failure<T = Error> {
    * Creates Failure object from the given error.
    *
    * @static
-   * @param {T} error
-   * @param {boolean} throwable
-   * @param {boolean} reportable
+   * @param {Error} error - The error object representing the failure.
+   * @param {boolean} throwable - Indicates whether the failure should be thrown (true) or not (false).
+   * @param {boolean} reportable - Indicates whether the failure should be reported for analysis (true) or not (false).
    * @returns {Failure}
    */
-  public static fromError<T = Error>(
-    error: T,
+  public static fromError(
+    error: Error,
     throwable = false,
     reportable = false
-  ): Failure<T> {
-    return new Failure<T>(error, throwable, reportable);
+  ): Failure {
+    return new Failure(error, throwable, reportable);
   }
 
   /**
@@ -39,9 +39,9 @@ export class Failure<T = Error> {
    * containing the given message.
    *
    * @static
-   * @param {string} message
-   * @param {boolean} throwable
-   * @param {boolean} reportable
+   * @param {string} message - The error message describing the failure.
+   * @param {boolean} throwable - Indicates whether the failure should be thrown (true) or not (false).
+   * @param {boolean} reportable - Indicates whether the failure should be reported for analysis (true) or not (false).
    * @returns {Failure}
    */
   public static withMessage(

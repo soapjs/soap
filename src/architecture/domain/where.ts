@@ -10,116 +10,309 @@ export type WhereOperator =
   | "in"
   | "nin"
   | "like";
-export type Condition = { left: string; operator: WhereOperator; right: any };
 export type LogicalOperator = "and" | "or";
-export type NestedCondition = {
-  conditions: WhereCondition[];
-  operator: LogicalOperator;
-};
-export type WhereCondition = Condition | NestedCondition;
 
+/**
+ * Class representing a condition with many keys.
+ * @template T
+ */
+export class ConditionWithManyKeys<T = any> {
+  /**
+   * Create a condition with many keys.
+   * @param {string[]} left - The left-hand side keys of the condition.
+   * @param {WhereOperator} operator - The operator of the condition.
+   * @param {T} right - The right-hand side value of the condition.
+   */
+  constructor(
+    public readonly left: string[],
+    public readonly operator: WhereOperator,
+    public readonly right: T
+  ) {}
+}
+
+/**
+ * Class representing a condition.
+ * @template T
+ */
+export class Condition<T = any> {
+  /**
+   * Create a condition.
+   * @param {string} left - The left-hand side key of the condition.
+   * @param {WhereOperator} operator - The operator of the condition.
+   * @param {T} right - The right-hand side value of the condition.
+   */
+  constructor(
+    public readonly left: string,
+    public readonly operator: WhereOperator,
+    public readonly right: T
+  ) {}
+}
+
+/**
+ * Class representing a varied condition.
+ */
+export class VariedCondition {
+  /**
+   * Create a varied condition.
+   * @param {(Condition | VariedCondition)[]} conditions - The array of conditions.
+   * @param {LogicalOperator} operator - The logical operator of the condition.
+   */
+  constructor(
+    public readonly conditions: (Condition | VariedCondition)[],
+    public readonly operator: LogicalOperator
+  ) {}
+}
+
+/**
+ * Class representing a nested condition.
+ */
+export class NestedCondition {
+  /**
+   * Create a nested condition.
+   * @param {Condition | VariedCondition} result - The result of the nested condition.
+   */
+  constructor(public readonly result: Condition | VariedCondition) {}
+}
+
+/**
+ * Class representing a where condition.
+ */
+export class WhereCondition {
+  private _result: Condition | VariedCondition;
+  private _operator: LogicalOperator;
+
+  /**
+   * Set the logical operator.
+   * @param {LogicalOperator} operator - The logical operator to set.
+   */
+  setLogicalOperator(operator: LogicalOperator) {
+    this._operator = operator;
+  }
+
+  /**
+   * Build the condition.
+   * @returns {Condition | VariedCondition} The built condition.
+   */
+  build() {
+    return this._result;
+  }
+
+  /**
+   * Add a condition to the where condition.
+   * @param {Condition | ConditionWithManyKeys | VariedCondition | NestedCondition} condition - The condition to add.
+   */
+  addCondition(
+    condition:
+      | Condition
+      | ConditionWithManyKeys
+      | VariedCondition
+      | NestedCondition
+  ) {
+    const { _result } = this;
+    if (condition instanceof NestedCondition) {
+      if (this._result) {
+        this._result = new VariedCondition(
+          [_result, condition.result],
+          this._operator || "and"
+        );
+      } else {
+        this._result = condition.result;
+      }
+    } else if (condition instanceof VariedCondition) {
+      if (!this._result) {
+        this._result = condition;
+      } else if (
+        this._result instanceof VariedCondition &&
+        this._result.operator === condition.operator
+      ) {
+        this._result.conditions.push(...condition.conditions);
+      } else {
+        this._result = new VariedCondition(
+          [_result, condition],
+          this._operator || "and"
+        );
+      }
+    } else if (condition instanceof ConditionWithManyKeys) {
+      const bundle = new VariedCondition(
+        condition.left.map(
+          (left) => new Condition(left, condition.operator, condition.right)
+        ),
+        this._operator || "and"
+      );
+      if (
+        this._result instanceof VariedCondition &&
+        this._result.operator === bundle.operator
+      ) {
+        this._result.conditions.push(...bundle.conditions);
+      } else {
+        this._result = bundle;
+      }
+    } else if (condition instanceof Condition) {
+      if (!this._result) {
+        this._result = condition;
+      } else if (
+        this._result instanceof VariedCondition &&
+        this._result.operator === this._operator
+      ) {
+        this._result.conditions.push(condition);
+      } else {
+        this._result = new VariedCondition(
+          [_result, condition],
+          this._operator || "and"
+        );
+      }
+    }
+  }
+}
+
+/**
+ * Class representing a where condition.
+ */
 export class Where {
-  private currentCondition: WhereCondition | null = null;
-  private currentLogical: LogicalOperator | null = null;
-  private currentKey: string;
+  private _registry: ("brackets" | "valueOf" | WhereOperator)[] = [];
+  private _result: WhereCondition = new WhereCondition();
+  private _keys: string[] = [];
 
+  private addCondition(operator: WhereOperator, value: any) {
+    let condition;
+    this._registry.push(operator);
+
+    if (this._keys.length > 1) {
+      condition = new ConditionWithManyKeys(this._keys, operator, value);
+    } else {
+      condition = new Condition(this._keys[0], operator, value);
+    }
+    this._result.addCondition(condition);
+  }
+
+  /**
+   * Build the condition.
+   * @returns {Condition | VariedCondition} The built condition.
+   */
+  build(): Condition | VariedCondition {
+    return this._result.build();
+  }
+
+  /**
+   * Get the value of the key.
+   * @param {string} key - The key to get the value for.
+   * @returns {Where} The current Where instance.
+   */
   valueOf(key: string): Where {
-    this.currentKey = key;
+    if (this._registry.at(-1) === "valueOf") {
+      this._keys.push(key);
+    } else {
+      this._keys = [key];
+    }
+    this._registry.push("valueOf");
     return this;
   }
 
-  private _addCondition(operator: WhereOperator, value: any): Where {
-    const newCondition: Condition = {
-      left: this.currentKey,
-      operator,
-      right: value,
-    };
-    if (this.currentCondition) {
-      if ("conditions" in this.currentCondition && this.currentLogical) {
-        this.currentCondition.conditions.push(newCondition);
-      } else {
-        this.currentCondition = {
-          conditions: [this.currentCondition as Condition, newCondition],
-          operator: this.currentLogical || "and",
-        };
-      }
-    } else {
-      this.currentCondition = newCondition;
-    }
+  /**
+   * Add brackets to the where condition.
+   * @param {Function} fn - The function defining the nested where condition.
+   * @returns {Where} The current Where instance.
+   */
+  brackets(fn: (where: Where) => void): Where {
+    const nestedWhere = new Where();
+    fn(nestedWhere);
+    this._result.addCondition(new NestedCondition(nestedWhere.build()));
+    this._registry.push("brackets");
     return this;
   }
 
   isEq(value: any): Where {
-    return this._addCondition("eq", value);
+    this.addCondition("eq", value);
+    return this;
+  }
+
+  areEq(value: any): Where {
+    return this.isEq(value);
   }
 
   isNotEq(value: any): Where {
-    return this._addCondition("ne", value);
+    this.addCondition("ne", value);
+    return this;
+  }
+
+  areNotEq(value: any): Where {
+    return this.isNotEq(value);
   }
 
   isLt(value: any): Where {
-    return this._addCondition("lt", value);
+    this.addCondition("lt", value);
+    return this;
+  }
+
+  areLt(value: any): Where {
+    return this.isLt(value);
   }
 
   isLte(value: any): Where {
-    return this._addCondition("lte", value);
+    this.addCondition("lte", value);
+    return this;
+  }
+
+  areLte(value: any): Where {
+    return this.isLte(value);
   }
 
   isGt(value: any): Where {
-    return this._addCondition("gt", value);
+    this.addCondition("gt", value);
+    return this;
+  }
+
+  areGt(value: any): Where {
+    return this.isGt(value);
   }
 
   isGte(value: any): Where {
-    return this._addCondition("gte", value);
+    this.addCondition("gte", value);
+    return this;
+  }
+
+  areGte(value: any): Where {
+    return this.isGte(value);
   }
 
   isIn(value: any[]): Where {
-    return this._addCondition("in", value);
+    this.addCondition("in", value);
+    return this;
+  }
+
+  areIn(value: any[]): Where {
+    return this.isIn(value);
   }
 
   isNotIn(value: any[]): Where {
-    return this._addCondition("nin", value);
+    this.addCondition("nin", value);
+    return this;
+  }
+
+  areNotIn(value: any[]): Where {
+    return this.isNotIn(value);
   }
 
   like(value: string): Where {
-    return this._addCondition("like", value);
+    this.addCondition("like", value);
+    return this;
   }
 
+  /**
+   * Get the logical AND operator.
+   * @returns {Where} The current Where instance.
+   */
   get and(): Where {
-    this.currentLogical = "and";
+    this._result.setLogicalOperator("and");
     return this;
   }
 
+  /**
+   * Get the logical OR operator.
+   * @returns {Where} The current Where instance.
+   */
   get or(): Where {
-    this.currentLogical = "or";
+    this._result.setLogicalOperator("or");
     return this;
-  }
-
-  brackets(fn: (where: Where) => void): Where {
-    const nestedWhere = new Where();
-    fn(nestedWhere);
-    const nestedCondition = nestedWhere.result;
-    if (nestedCondition) {
-      if (this.currentCondition) {
-        if ("conditions" in this.currentCondition && this.currentLogical) {
-          this.currentCondition.conditions.push(nestedCondition);
-        } else {
-          this.currentCondition = {
-            conditions: [this.currentCondition as Condition, nestedCondition],
-            operator: this.currentLogical || "and",
-          };
-        }
-      } else {
-        this.currentCondition = nestedCondition;
-      }
-    }
-    this.currentLogical = null;
-    return this;
-  }
-
-  get result(): WhereCondition | null {
-    return this.currentCondition;
   }
 }
-
-export default Where;

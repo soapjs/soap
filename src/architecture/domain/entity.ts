@@ -25,5 +25,5 @@ export abstract class Entity<ObjectType = UnknownObject, RestType = UnknownObjec
    * @abstract
    * @returns {ObjectType} The JSON representation of the entity.
    */
-  public abstract toObject(): ObjectType;
+  public abstract toJson(): ObjectType;
 }

@@ -1,7 +1,1 @@
-export enum RequestMethod {
-  Put = 'PUT',
-  Post = 'POST',
-  Get = 'GET',
-  Delete = 'DELETE',
-  Patch = 'PATCH',
-}
+export type RequestMethod = "PUT" | "POST" | "GET" | "DELETE" | "PATCH";

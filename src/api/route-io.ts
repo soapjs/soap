@@ -1,16 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { Result } from "../architecture";
-import { RouteResponse, RouteRequest } from "./api.types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-export abstract class RouteIO<
-  RequestType = RouteRequest,
-  ResponseType = RouteResponse,
-  InputType = any,
-  OutputType = Result<any>
-> {
-  public abstract toResponse?(output?: OutputType): ResponseType;
-  public abstract fromRequest?(
-    request: RequestType | unknown,
-    ...args: unknown[]
-  ): InputType;
+import { Result } from "../architecture";
+import { RouteResponse, RouteRequest } from "./route.types";
+
+export abstract class RouteIO<T = any, K = any> {
+  public abstract toResponse?(
+    response: RouteResponse,
+    result?: Result<K>
+  ): RouteResponse;
+  public abstract fromRequest?(request: RouteRequest, ...args: unknown[]): T;
 }

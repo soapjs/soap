@@ -1,5 +1,5 @@
 import { RequestMethod } from "./api.enums";
-import { RouteHandler, RouteOptions } from "./api.types";
+import { RouteHandler, RouteOptions } from "./route.types";
 
 /**
  * Represents a route in the web framework.
@@ -26,8 +26,6 @@ export class Route {
     public readonly handler: RouteHandler,
     public readonly options?: RouteOptions
   ) {}
-
-
 }
 
 /**
@@ -45,7 +43,7 @@ export class GetRoute extends Route {
     public readonly handler: RouteHandler,
     public readonly options?: RouteOptions
   ) {
-    super(RequestMethod.Get, path, handler, options);
+    super("GET", path, handler, options);
   }
 }
 
@@ -64,7 +62,7 @@ export class PostRoute extends Route {
     public readonly handler: RouteHandler,
     public readonly options?: RouteOptions
   ) {
-    super(RequestMethod.Post, path, handler, options);
+    super("POST", path, handler, options);
   }
 }
 
@@ -83,7 +81,7 @@ export class PatchRoute extends Route {
     public readonly handler: RouteHandler,
     public readonly options?: RouteOptions
   ) {
-    super(RequestMethod.Patch, path, handler, options);
+    super("PATCH", path, handler, options);
   }
 }
 
@@ -102,7 +100,7 @@ export class PutRoute extends Route {
     public readonly handler: RouteHandler,
     public readonly options?: RouteOptions
   ) {
-    super(RequestMethod.Put, path, handler, options);
+    super("PUT", path, handler, options);
   }
 }
 
@@ -121,6 +119,6 @@ export class DeleteRoute extends Route {
     public readonly handler: RouteHandler,
     public readonly options?: RouteOptions
   ) {
-    super(RequestMethod.Delete, path, handler, options);
+    super("DELETE", path, handler, options);
   }
 }

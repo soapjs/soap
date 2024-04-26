@@ -8,6 +8,7 @@ import { AggregationParams } from "../domain/queries/params/aggregation-params";
 import { CountParams } from "../domain/queries/params/count-params";
 import { FindParams, RemoveParams, UpdateParams } from "../domain/queries";
 import { DataContext } from "./data-context";
+import { RepositoryMethodError } from "../domain/errors";
 
 /**
  * @class
@@ -31,7 +32,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
    * @param {AggregationParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the aggregation operation.
    * @param {Mapper<ResultType, AggregationType>?} mapper The Mapper used for ResultType-AggregationType transformations (optional).
    *
-   * @returns {Promise<Result<ResultType, Error>>} The result of the aggregation operation.
+   * @returns {Promise<Result<ResultType>>} The result of the aggregation operation.
    */
   public async aggregate<
     ResultType = EntityType | EntityType[],
@@ -39,14 +40,18 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
   >(
     paramsOrBuilder: AggregationParams | QueryBuilder,
     mapper?: Mapper<ResultType, AggregationType>
-  ): Promise<Result<ResultType, Error>> {
+  ): Promise<Result<ResultType>> {
     try {
       let query: Query;
 
       if (paramsOrBuilder instanceof AggregationParams) {
         query = this.context.queries.createAggregationQuery(paramsOrBuilder);
-      } else {
+      } else if (paramsOrBuilder instanceof QueryBuilder) {
         query = paramsOrBuilder.build();
+      } else {
+        throw new RepositoryMethodError(
+          "paramsOrBuilder is neither a QueryBuilder nor a AggregationParams"
+        );
       }
 
       const aggregation = await this.context.collection.aggregate(query);
@@ -73,11 +78,11 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
    *
    * @param {UpdateParams<Partial<EntityType>> | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the update operation.
    *
-   * @returns {Promise<Result<UpdateStats, Error>>} The result of the update operation, containing the update statistics or an error.
+   * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
    */
   public async update(
     paramsOrBuilder: UpdateParams<Partial<EntityType>> | QueryBuilder
-  ): Promise<Result<UpdateStats, Error>> {
+  ): Promise<Result<UpdateStats>> {
     try {
       let query: Query;
 
@@ -92,8 +97,12 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
           where,
           methods
         );
-      } else {
+      } else if (paramsOrBuilder instanceof QueryBuilder) {
         query = paramsOrBuilder.build();
+      } else {
+        throw new RepositoryMethodError(
+          "paramsOrBuilder is neither a QueryBuilder nor a UpdateParams"
+        );
       }
 
       const stats = await this.context.collection.update(query);
@@ -109,11 +118,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
    *
    * @param {EntityType[]} entities The entities to be added.
    *
-   * @returns {Promise<Result<EntityType[], Error>>} The result of the add operation, containing the added entities or an error.
+   * @returns {Promise<Result<EntityType[]>>} The result of the add operation, containing the added entities or an error.
    */
-  public async add(
-    entities: EntityType[]
-  ): Promise<Result<EntityType[], Error>> {
+  public async add(entities: EntityType[]): Promise<Result<EntityType[]>> {
     try {
       const documents = entities.map((entity) =>
         this.context.mapper.fromEntity(entity)
@@ -134,22 +141,26 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
    *
    * @param {RemoveParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the remove operation.
    *
-   * @returns {Promise<Result<RemoveStats, Error>>} The result of the remove operation, containing the removal statistics or an error.
+   * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
    */
   public async remove(
     paramsOrBuilder: RemoveParams | QueryBuilder
-  ): Promise<Result<RemoveStats, Error>> {
+  ): Promise<Result<RemoveStats>> {
     try {
       let query: Query;
 
       if (paramsOrBuilder instanceof RemoveParams) {
         query = this.context.queries.createRemoveQuery(paramsOrBuilder);
-      } else {
+      } else if (paramsOrBuilder instanceof QueryBuilder) {
         query = paramsOrBuilder.build();
+      } else {
+        throw new RepositoryMethodError(
+          "paramsOrBuilder is neither a QueryBuilder nor a RemoveParams"
+        );
       }
 
       const stats = await this.context.collection.remove(query);
-
+      console.log("STATS", stats);
       return Result.withContent(stats);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
@@ -161,17 +172,17 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
    *
    * @param {CountParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the count operation (optional).
    *
-   * @returns {Promise<Result<number, Error>>} The result of the count operation, containing the number of entities or an error.
+   * @returns {Promise<Result<number>>} The result of the count operation, containing the number of entities or an error.
    */
   public async count(
     paramsOrBuilder?: CountParams | QueryBuilder
-  ): Promise<Result<number, Error>> {
+  ): Promise<Result<number>> {
     try {
       let query: Query;
 
       if (paramsOrBuilder instanceof CountParams) {
         query = this.context.queries.createCountQuery(paramsOrBuilder);
-      } else if (paramsOrBuilder?.build) {
+      } else if (paramsOrBuilder instanceof QueryBuilder) {
         query = paramsOrBuilder.build();
       } else {
         query = {};
@@ -190,16 +201,16 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
    *
    * @param {FindParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the find operation (optional).
    *
-   * @returns {Promise<Result<EntityType[], Error>>} The result of the find operation, containing the found entities or an error.
+   * @returns {Promise<Result<EntityType[]>>} The result of the find operation, containing the found entities or an error.
    */
   public async find(
     paramsOrBuilder?: FindParams | QueryBuilder
-  ): Promise<Result<EntityType[], Error>> {
+  ): Promise<Result<EntityType[]>> {
     try {
       let query: Query;
       if (paramsOrBuilder instanceof FindParams) {
         query = this.context.queries.createFindQuery(paramsOrBuilder);
-      } else if (paramsOrBuilder?.build) {
+      } else if (paramsOrBuilder instanceof QueryBuilder) {
         query = paramsOrBuilder.build();
       } else {
         query = {};

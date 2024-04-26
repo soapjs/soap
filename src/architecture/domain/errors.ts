@@ -9,3 +9,9 @@ export class UnsupportedOperatorError extends Error {
     super(`Unsupported operator "${operator}".`);
   }
 }
+
+export class RepositoryMethodError extends Error {
+  constructor(message: string) {
+    super(`Repository Method Error: "${message}".`);
+  }
+}
