@@ -7,6 +7,6 @@ export abstract class RouteIO<T = any, K = any> {
   public abstract toResponse?(
     response: RouteResponse,
     result?: Result<K>
-  ): RouteResponse;
+  ): void;
   public abstract fromRequest?(request: RouteRequest, ...args: unknown[]): T;
 }

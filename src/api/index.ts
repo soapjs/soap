@@ -4,7 +4,7 @@ export * from "./route.types";
 export * from "./dependencies";
 export * from "./route";
 export * from "./router";
-export * from "./basic-router";
+export * from "./router";
 export * from "./route-io";
 export * from "./singleton";
 export * from "./server";

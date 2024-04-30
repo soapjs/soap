@@ -1,4 +1,4 @@
-import { BasicRouter } from "../basic-router";
+import { Router } from "../router";
 import { Route } from "../route";
 import { RouteOptions } from "../route.types";
 import { WebFrameworkMethods } from "../web-framework";
@@ -21,12 +21,21 @@ const middlewareProviders = {
   },
 };
 
-class CustomRouter extends BasicRouter {
+class CustomRouter extends Router {
+  protected callFrameworkMethod(
+    path: string,
+    framework: any,
+    method: string,
+    middlewares: any[],
+    handler: (...args: any[]) => any
+  ): (...args: any[]) => any {
+    return framework[method](path, middlewares, handler);
+  }
   public configure(...args: unknown[]) {}
 }
 
-describe("BasicRouter", () => {
-  let router: BasicRouter;
+describe("Router", () => {
+  let router: Router;
 
   beforeEach(() => {
     const framework: WebFrameworkMethods = {

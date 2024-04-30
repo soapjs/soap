@@ -52,7 +52,5 @@ export type RouteOptions = {
   middlewares?: WebFrameworkMiddleware[];
 };
 
-export type RouteHandler<T = any> = (
-  input?: any,
-  ...args: unknown[]
-) => Result<T>;
+export type RouteHandler<T = any> = (...args: unknown[]) => Result<T>;
+export type AnyFunction<T = any> = (...args: any[]) => T;

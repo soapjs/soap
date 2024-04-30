@@ -66,11 +66,11 @@ export type GetCustomerDetailsResponse = {
 ```
 
 ### RouteIO
-Contains methods for parsing a request into a handler's input and vice versa, parsing the handler's result into a response. `RouteIO` should be executed before the handler is run. You can use a dedicated router or extend the available one in `@soapjs/soap`, like `BasicRouter`.
+Contains methods for parsing a request into a handler's input and vice versa, parsing the handler's result into a response. `RouteIO` should be executed before the handler is run. 
 
 ```typescript
 export class GetCustomerDetailsRouteIO implements RouteIO {
-  public toResponse(response: RouteResponse, result: Result<Customer>): Response {
+  public toResponse(response: RouteResponse, result: Result<Customer>) {
     if (result.isFailure) {
       // decide on the status type and content
       return response.status(500).send(result.failure.error.message);
@@ -90,7 +90,18 @@ export class GetCustomerDetailsRouteIO implements RouteIO {
 A router is used to manage routes, or rather, to embed and execute them. The framework and all dependencies must be initialized beforehand to use the router. To add a new route, mount it in the `configure` method as shown below:
 
 ```typescript
-export class Router extends Soap.BasicRouter {
+export class MyRouter extends Soap.Router {
+  // Example implementation for an Express-based router
+  protected callFrameworkMethod(
+    path: string,
+    framework: any,
+    method: string,
+    middlewares: any[],
+    handler: (...args: any[]) => any
+  ): (...args: any[]) => any {
+    return framework[method](path, middlewares, handler);
+  }
+
   public async configure(container: Container) {
     // Example of adding a route to the router:
     const customerController = 
@@ -102,7 +113,6 @@ export class Router extends Soap.BasicRouter {
     );
   }
 }
-// You can also create your own Router and implement Soap.Router interface
 ```
 
 ### Controllers
