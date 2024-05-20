@@ -1,24 +1,12 @@
 import { DataContext } from "../data-context";
 import { Collection } from "../collection";
 import { QueryFactory } from "../query-factory";
-import {
-  UpdateParams,
-  RemoveParams,
-  CountParams,
-  FindParams,
-  AggregationParams,
-  QueryBuilder,
-} from "../../domain/queries";
+import { FindParams } from "../../domain/params";
 import { Result } from "../../domain/result";
 import { Failure } from "../../domain/failure";
-import {
-  UpdateStats,
-  RemoveStats,
-  Query,
-  UnknownObject,
-} from "../../domain/types";
+import { UpdateStats, RemoveStats } from "../../domain/types";
 import { RepositoryImpl } from "../repository-impl";
-import { Where } from "../../domain/where";
+import { QueryBuilder } from "../../domain/query-builder";
 
 class MockQueryBuilder extends QueryBuilder {
   build() {
@@ -40,7 +28,13 @@ describe("RepositoryImpl class", () => {
       toEntity: jest.fn((doc) => doc),
       fromEntity: jest.fn((entity) => entity),
     },
-    queries: {} as unknown as QueryFactory,
+    queries: {
+      createCountQuery: jest.fn(),
+      createRemoveQuery: jest.fn(),
+      createAggregationQuery: jest.fn(),
+      createUpdateQuery: jest.fn(),
+      createFindQuery: jest.fn(),
+    } as unknown as QueryFactory,
   };
 
   const repository = new RepositoryImpl(dataContext);

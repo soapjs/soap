@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { CountParams } from "./queries/params/count-params";
-import { FindParams } from "./queries/params/find-params";
-import { QueryBuilder } from "./queries/query-builder";
-import { RemoveParams } from "./queries/params/remove-params";
-import { UpdateParams } from "./queries/params/update-params";
+import { QueryBuilder } from "./query-builder";
 import { Result } from "./result";
 import { RemoveStats, UpdateStats } from "./types";
-import { AggregationParams } from "./queries";
 import { Mapper } from "../data/mapper";
+import {
+  AggregationParams,
+  CountParams,
+  FindParams,
+  RemoveParams,
+  UpdateParams,
+} from "./params";
 
 /**
  * Represents an abstract ReadOnlyRepository class.

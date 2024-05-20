@@ -35,6 +35,13 @@ export class Result<ContentType = void> {
   }
 
   /**
+   * @returns {boolean}
+   */
+  public get isSuccess(): boolean {
+    return !this.failure;
+  }
+
+  /**
    * Create instance of the Result class with the content
    *
    * @static

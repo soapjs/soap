@@ -5,7 +5,7 @@ import {
   FindParams,
   RemoveParams,
   UpdateMethod,
-} from "../domain/queries";
+} from "../domain/params";
 import { Query } from "../domain/types";
 import { Where } from "../domain/where";
 

@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { Result } from "../architecture";
-import { RouteResponse, RouteRequest } from "./route.types";
 
-export abstract class RouteIO<T = any, K = any> {
-  public abstract toResponse?(
-    response: RouteResponse,
-    result?: Result<K>
-  ): void;
-  public abstract fromRequest?(request: RouteRequest, ...args: unknown[]): T;
+export abstract class RouteIO<
+  I = unknown,
+  O = unknown,
+  RequestType = unknown,
+  ResponseType = unknown
+> {
+  public abstract toResponse?(response: ResponseType, result?: Result<O>): void;
+  public abstract fromRequest?(request: RequestType, ...args: unknown[]): I;
 }

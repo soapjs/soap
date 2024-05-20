@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { RouteRequest } from "../../route.types";
+import { Middleware } from "./middleware";
 
 /**
  * Represents options for validation middleware.
@@ -40,12 +40,11 @@ export type ValidationResult = {
 /**
  * Represents a validation service interface.
  */
-export interface Validation {
+export interface ValidationMiddleware extends Middleware {
   /**
    * Validates a request.
-   * @param request The request object to be validated.
-   * @param args Additional arguments required for validation, if any.
+   * @param {ValidationOptions} options Additional options for validation.
    * @returns The validation result.
    */
-  validate(request: RouteRequest, ...args: any[]): ValidationResult;
+  use(options: ValidationOptions): any;
 }

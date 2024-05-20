@@ -12,5 +12,6 @@ export * from "./domain/repository";
 export * from "./domain/result";
 export * from "./domain/types";
 export * from "./domain/use-case";
-export * from "./domain/queries";
+export * from "./domain/params";
+export * from "./domain/query-builder";
 export * from "./domain/where";

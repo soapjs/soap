@@ -1,4 +1,4 @@
-import { Singleton } from "../singleton";
+import { Singleton } from "../../common/singleton";
 
 describe("Singleton", () => {
   it("should bind a value to a key", () => {

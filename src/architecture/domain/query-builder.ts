@@ -1,4 +1,5 @@
-import { Query, UnknownObject } from '../types';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Query, UnknownObject } from "./types";
 
 /**
  * A class representing a query builder.
@@ -17,7 +18,7 @@ export class QueryBuilder<QueryType = Query> {
    * @returns {QueryBuilder<QueryType>} - The updated query builder instance.
    */
   public with(args: UnknownObject): QueryBuilder<QueryType> {
-    Object.keys(args).forEach(key => {
+    Object.keys(args).forEach((key) => {
       this.args[key] = args[key];
     });
 
@@ -30,6 +31,20 @@ export class QueryBuilder<QueryType = Query> {
    * @returns {QueryType} - The built query.
    */
   public build(): QueryType {
-    throw new Error('Method not implemented.');
+    throw new Error("Method not implemented.");
   }
+}
+
+/**
+ * Checks if an object conforms to the QueryBuilder structure.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object is a QueryBuilder, false otherwise.
+ */
+export function isQueryBuilder(obj: any): obj is QueryBuilder {
+  return (
+    obj &&
+    typeof obj.with === "function" &&
+    typeof obj.build === "function" &&
+    typeof obj.args === "object"
+  );
 }

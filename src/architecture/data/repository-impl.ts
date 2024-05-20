@@ -1,12 +1,23 @@
 import { Failure } from "../domain/failure";
-import { QueryBuilder } from "../domain/queries/query-builder";
+import { QueryBuilder, isQueryBuilder } from "../domain/query-builder";
 import { Repository } from "../domain/repository";
 import { Result } from "../domain/result";
 import { Mapper } from "./mapper";
 import { UpdateStats, RemoveStats, Query } from "../domain/types";
-import { AggregationParams } from "../domain/queries/params/aggregation-params";
-import { CountParams } from "../domain/queries/params/count-params";
-import { FindParams, RemoveParams, UpdateParams } from "../domain/queries";
+import {
+  AggregationParams,
+  isAggregationParams,
+  isCountParams,
+  isFindParams,
+  isRemoveParams,
+  isUpdateParams,
+} from "../domain/params";
+import {
+  FindParams,
+  RemoveParams,
+  UpdateParams,
+  CountParams,
+} from "../domain/params";
 import { DataContext } from "./data-context";
 import { RepositoryMethodError } from "../domain/errors";
 
@@ -44,9 +55,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (paramsOrBuilder instanceof AggregationParams) {
+      if (isAggregationParams(paramsOrBuilder)) {
         query = this.context.queries.createAggregationQuery(paramsOrBuilder);
-      } else if (paramsOrBuilder instanceof QueryBuilder) {
+      } else if (isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         throw new RepositoryMethodError(
@@ -86,7 +97,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (paramsOrBuilder instanceof UpdateParams) {
+      if (isUpdateParams(paramsOrBuilder)) {
         const { updates, where, methods } = paramsOrBuilder;
         const documents = updates.map((update) =>
           this.context.mapper.fromEntity(update as EntityType)
@@ -97,7 +108,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
           where,
           methods
         );
-      } else if (paramsOrBuilder instanceof QueryBuilder) {
+      } else if (isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         throw new RepositoryMethodError(
@@ -149,9 +160,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (paramsOrBuilder instanceof RemoveParams) {
+      if (isRemoveParams(paramsOrBuilder)) {
         query = this.context.queries.createRemoveQuery(paramsOrBuilder);
-      } else if (paramsOrBuilder instanceof QueryBuilder) {
+      } else if (isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         throw new RepositoryMethodError(
@@ -160,7 +171,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
       }
 
       const stats = await this.context.collection.remove(query);
-      console.log("STATS", stats);
+
       return Result.withContent(stats);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
@@ -180,9 +191,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (paramsOrBuilder instanceof CountParams) {
+      if (isCountParams(paramsOrBuilder)) {
         query = this.context.queries.createCountQuery(paramsOrBuilder);
-      } else if (paramsOrBuilder instanceof QueryBuilder) {
+      } else if (isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         query = {};
@@ -208,9 +219,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
   ): Promise<Result<EntityType[]>> {
     try {
       let query: Query;
-      if (paramsOrBuilder instanceof FindParams) {
+      if (isFindParams(paramsOrBuilder)) {
         query = this.context.queries.createFindQuery(paramsOrBuilder);
-      } else if (paramsOrBuilder instanceof QueryBuilder) {
+      } else if (isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         query = {};
