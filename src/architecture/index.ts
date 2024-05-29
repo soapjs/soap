@@ -1,5 +1,5 @@
-export * from "./data/collection";
-export * from "./data/data-context";
+export * from "./data/source";
+export * from "./data/repository-data-contexts";
 export * from "./data/collection.errors";
 export * from "./data/mapper";
 export * from "./data/query-factory";

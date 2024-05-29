@@ -13,7 +13,7 @@ import { Where } from "../domain/where";
  * @class
  * Represents a collection of query builders for different types of operations.
  */
-export abstract class QueryFactory {
+export interface QueryFactory {
   /**
    * Builds a query for find operations.
    *
@@ -21,7 +21,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the find operation.
    */
-  public abstract createFindQuery(params: FindParams, ...args: any[]): Query;
+  createFindQuery(params: FindParams, ...args: any[]): Query;
 
   /**
    * Builds a query for count operations.
@@ -30,7 +30,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the count operation.
    */
-  public abstract createCountQuery(params: CountParams, ...args: any[]): Query;
+  createCountQuery(params: CountParams, ...args: any[]): Query;
 
   /**
    * Builds a query for update operations.
@@ -42,7 +42,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the update operation.
    */
-  public abstract createUpdateQuery<UpdateType = unknown>(
+  createUpdateQuery<UpdateType = unknown>(
     updates: UpdateType[],
     where: Where[],
     methods: UpdateMethod[],
@@ -56,7 +56,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the remove operation.
    */
-  public abstract createRemoveQuery(
+  createRemoveQuery(
     params: RemoveParams,
     ...args: any[]
   ): Query;
@@ -68,7 +68,7 @@ export abstract class QueryFactory {
    *
    * @returns {Query} The query for the aggregation operation.
    */
-  public abstract createAggregationQuery(
+  createAggregationQuery(
     params: AggregationParams,
     ...args: any[]
   ): Query;

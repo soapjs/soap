@@ -1,22 +1,31 @@
-import { ConfigVars } from "../config-vars";
+import { ConfigVars, UndefinedEnviromentVariableError } from "../config-vars";
 
 describe("ConfigVars", () => {
   describe("getEnv", () => {
     it("should return value from process.env if exists", () => {
       process.env.TEST_VAR = "test_value";
       const configVars = new ConfigVars();
-      expect(configVars["getEnv"]("TEST_VAR")).toEqual("test_value");
+      expect(configVars["getEnv"]("TEST_VAR", false)).toEqual("test_value");
       delete process.env.TEST_VAR;
     });
 
     it("should return value from .env file if exists and process.env does not contain the variable", () => {
       const configVars = new ConfigVars(`${__dirname}/.env.test`);
-      expect(configVars["getEnv"]("TEST_VAR")).toEqual("test_value");
+      expect(configVars["getEnv"]("TEST_VAR", false)).toEqual("test_value");
     });
 
     it("should return undefined if variable does not exist in process.env or .env file", () => {
       const configVars = new ConfigVars();
-      expect(configVars["getEnv"]("NON_EXISTENT_VAR")).toBeUndefined();
+      expect(configVars["getEnv"]("NON_EXISTENT_VAR", false)).toBeUndefined();
+    });
+
+    it("should throw error if variable does not exist in process.env or .env file and marked as required", () => {
+      try {
+        const configVars = new ConfigVars();
+        configVars["getEnv"]("NON_EXISTENT_VAR", true);
+      } catch (error) {
+        expect(error).toBeInstanceOf(UndefinedEnviromentVariableError);
+      }
     });
   });
 

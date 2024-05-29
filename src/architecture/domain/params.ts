@@ -7,6 +7,28 @@ import { Where } from "./where";
  */
 export class AggregationParams {
   /**
+   * Checks if an object conforms to the AggregationParams structure.
+   * @static
+   * @param {any} obj - The object to check.
+   * @returns {boolean} True if the object is an AggregationParams, false otherwise.
+   */
+  static isAggregationParams(obj: any): obj is AggregationParams {
+    return (
+      obj &&
+      Object.keys(obj).length > 0 &&
+      (obj.groupBy === undefined || Array.isArray(obj.groupBy)) &&
+      (obj.filterBy === undefined || typeof obj.filterBy === "object") &&
+      (obj.sort === undefined || typeof obj.sort === "object") &&
+      (obj.sum === undefined || typeof obj.sum === "string") &&
+      (obj.average === undefined || typeof obj.average === "string") &&
+      (obj.min === undefined || typeof obj.min === "string") &&
+      (obj.max === undefined || typeof obj.max === "string") &&
+      (obj.count === undefined || typeof obj.count === "string") &&
+      (obj.where === undefined || typeof obj.where === "object")
+    );
+  }
+
+  /**
    * Creates a new instance of AggregationParams with the provided options.
    * @static
    * @param {Object} options - The options for creating AggregationParams.
@@ -77,6 +99,20 @@ export class AggregationParams {
  */
 export class CountParams {
   /**
+   * Checks if an object conforms to the CountParams structure.
+   * @static
+   * @param {any} obj - The object to check.
+   * @returns {boolean} True if the object is a CountParams, false otherwise.
+   */
+  static isCountParams(obj: any): obj is CountParams {
+    return (
+      obj &&
+      Object.keys(obj).length > 0 &&
+      (obj.sort === undefined || typeof obj.sort === "object") &&
+      (obj.where === undefined || typeof obj.where === "object")
+    );
+  }
+  /**
    * Creates a new instance of CountParams with the provided options.
    * @static
    * @param {Object} options - The options for creating CountParams.
@@ -101,6 +137,22 @@ export class CountParams {
  * Represents the parameters for finding.
  */
 export class FindParams {
+  /**
+   * Checks if an object conforms to the FindParams structure.
+   * @static
+   * @param {any} obj - The object to check.
+   * @returns {boolean} True if the object is a FindParams, false otherwise.
+   */
+  static isFindParams(obj: any): obj is FindParams {
+    return (
+      obj &&
+      Object.keys(obj).length > 0 &&
+      (obj.limit === undefined || typeof obj.limit === "number") &&
+      (obj.offset === undefined || typeof obj.offset === "number") &&
+      (obj.sort === undefined || typeof obj.sort === "object") &&
+      (obj.where === undefined || typeof obj.where === "object")
+    );
+  }
   /**
    * Creates a new instance of FindParams with the provided options.
    * @static
@@ -140,6 +192,19 @@ export class FindParams {
  */
 export class RemoveParams {
   /**
+   * Checks if an object conforms to the RemoveParams structure.
+   * @static
+   * @param {any} obj - The object to check.
+   * @returns {boolean} True if the object is a RemoveParams, false otherwise.
+   */
+  static isRemoveParams(obj: any): obj is RemoveParams {
+    return (
+      obj &&
+      Object.keys(obj).length > 0 &&
+      (obj.where === undefined || typeof obj.where === "object")
+    );
+  }
+  /**
    * Creates a new instance of RemoveParams with the provided options.
    * @static
    * @param {Where} where - The where clause for removing.
@@ -172,6 +237,24 @@ export type UpdateEachParams<T = unknown> = {
  * @template UpdateType The type of the entities or partial entities being updated.
  */
 export class UpdateParams<UpdateType = unknown> {
+  /**
+   * Checks if an object conforms to the UpdateParams structure.
+   * @static
+   * @param {any} obj - The object to check.
+   * @returns {boolean} True if the object is a UpdateParams, false otherwise.
+   */
+  static isUpdateParams<UpdateType>(obj: any): obj is UpdateParams<UpdateType> {
+    return (
+      obj &&
+      Object.keys(obj).length > 0 &&
+      Array.isArray(obj.updates) &&
+      Array.isArray(obj.where) &&
+      Array.isArray(obj.methods) &&
+      obj.updates.length === obj.where.length &&
+      obj.where.length === obj.methods.length
+    );
+  }
+
   /**
    * Factory method for creating parameters to update multiple entities.
    *
@@ -237,87 +320,4 @@ export class UpdateParams<UpdateType = unknown> {
     public readonly where: Where[],
     public readonly methods: UpdateMethod[]
   ) {}
-}
-
-/**
- * Checks if an object conforms to the AggregationParams structure.
- * @param {any} obj - The object to check.
- * @returns {boolean} True if the object is an AggregationParams, false otherwise.
- */
-export function isAggregationParams(obj: any): obj is AggregationParams {
-  return (
-    obj &&
-    Object.keys(obj).length > 0 &&
-    (obj.groupBy === undefined || Array.isArray(obj.groupBy)) &&
-    (obj.filterBy === undefined || typeof obj.filterBy === "object") &&
-    (obj.sort === undefined || typeof obj.sort === "object") &&
-    (obj.sum === undefined || typeof obj.sum === "string") &&
-    (obj.average === undefined || typeof obj.average === "string") &&
-    (obj.min === undefined || typeof obj.min === "string") &&
-    (obj.max === undefined || typeof obj.max === "string") &&
-    (obj.count === undefined || typeof obj.count === "string") &&
-    (obj.where === undefined || typeof obj.where === "object")
-  );
-}
-
-/**
- * Checks if an object conforms to the CountParams structure.
- * @param {any} obj - The object to check.
- * @returns {boolean} True if the object is a CountParams, false otherwise.
- */
-export function isCountParams(obj: any): obj is CountParams {
-  return (
-    obj &&
-    Object.keys(obj).length > 0 &&
-    (obj.sort === undefined || typeof obj.sort === "object") &&
-    (obj.where === undefined || typeof obj.where === "object")
-  );
-}
-
-/**
- * Checks if an object conforms to the FindParams structure.
- * @param {any} obj - The object to check.
- * @returns {boolean} True if the object is a FindParams, false otherwise.
- */
-export function isFindParams(obj: any): obj is FindParams {
-  return (
-    obj &&
-    Object.keys(obj).length > 0 &&
-    (obj.limit === undefined || typeof obj.limit === "number") &&
-    (obj.offset === undefined || typeof obj.offset === "number") &&
-    (obj.sort === undefined || typeof obj.sort === "object") &&
-    (obj.where === undefined || typeof obj.where === "object")
-  );
-}
-
-/**
- * Checks if an object conforms to the RemoveParams structure.
- * @param {any} obj - The object to check.
- * @returns {boolean} True if the object is a RemoveParams, false otherwise.
- */
-export function isRemoveParams(obj: any): obj is RemoveParams {
-  return (
-    obj &&
-    Object.keys(obj).length > 0 &&
-    (obj.where === undefined || typeof obj.where === "object")
-  );
-}
-
-/**
- * Checks if an object conforms to the UpdateParams structure.
- * @param {any} obj - The object to check.
- * @returns {boolean} True if the object is a UpdateParams, false otherwise.
- */
-export function isUpdateParams<UpdateType>(
-  obj: any
-): obj is UpdateParams<UpdateType> {
-  return (
-    obj &&
-    Object.keys(obj).length > 0 &&
-    Array.isArray(obj.updates) &&
-    Array.isArray(obj.where) &&
-    Array.isArray(obj.methods) &&
-    obj.updates.length === obj.where.length &&
-    obj.where.length === obj.methods.length
-  );
 }

@@ -1,9 +1,4 @@
 import {
-  isAggregationParams,
-  isCountParams,
-  isFindParams,
-  isRemoveParams,
-  isUpdateParams,
   AggregationParams,
   CountParams,
   FindParams,
@@ -28,7 +23,7 @@ describe("Helper Functions", () => {
       count: "field6",
       where: new Where(),
     };
-    expect(isAggregationParams(validParams)).toBe(true);
+    expect(AggregationParams.isAggregationParams(validParams)).toBe(true);
   });
 
   test("isCountParams should return true for valid CountParams", () => {
@@ -36,7 +31,7 @@ describe("Helper Functions", () => {
       sort: {},
       where: new Where(),
     };
-    expect(isCountParams(validParams)).toBe(true);
+    expect(CountParams.isCountParams(validParams)).toBe(true);
   });
 
   test("isFindParams should return true for valid FindParams", () => {
@@ -46,14 +41,14 @@ describe("Helper Functions", () => {
       sort: {},
       where: new Where(),
     };
-    expect(isFindParams(validParams)).toBe(true);
+    expect(FindParams.isFindParams(validParams)).toBe(true);
   });
 
   test("isRemoveParams should return true for valid RemoveParams", () => {
     const validParams: Partial<RemoveParams> = {
       where: new Where(),
     };
-    expect(isRemoveParams(validParams)).toBe(true);
+    expect(RemoveParams.isRemoveParams(validParams)).toBe(true);
   });
 
   test("isUpdateParams should return true for valid UpdateParams", () => {
@@ -62,7 +57,7 @@ describe("Helper Functions", () => {
       where: [new Where()],
       methods: [UpdateMethod.UpdateOne],
     };
-    expect(isUpdateParams(validParams)).toBe(true);
+    expect(UpdateParams.isUpdateParams(validParams)).toBe(true);
   });
 });
 

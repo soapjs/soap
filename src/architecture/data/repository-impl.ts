@@ -1,24 +1,23 @@
 import { Failure } from "../domain/failure";
-import { QueryBuilder, isQueryBuilder } from "../domain/query-builder";
+import { QueryBuilder } from "../domain/query-builder";
 import { Repository } from "../domain/repository";
 import { Result } from "../domain/result";
 import { Mapper } from "./mapper";
 import { UpdateStats, RemoveStats, Query } from "../domain/types";
 import {
-  AggregationParams,
-  isAggregationParams,
-  isCountParams,
-  isFindParams,
-  isRemoveParams,
-  isUpdateParams,
-} from "../domain/params";
-import {
   FindParams,
   RemoveParams,
   UpdateParams,
   CountParams,
+  AggregationParams,
 } from "../domain/params";
-import { DataContext } from "./data-context";
+import {
+  AnyContext,
+  BlockchainContext,
+  DatabaseContext,
+  HttpContext,
+  WebSocketContext,
+} from "./repository-data-contexts";
 import { RepositoryMethodError } from "../domain/errors";
 
 /**
@@ -30,12 +29,15 @@ import { RepositoryMethodError } from "../domain/errors";
 export class RepositoryImpl<EntityType, DocumentType = unknown>
   implements Repository<EntityType, DocumentType>
 {
-  /**
-   * @constructor
-   * Creates a new RepositoryImpl instance.
-   *
-   */
-  constructor(protected context: DataContext<EntityType, DocumentType>) {}
+  
+  constructor(
+    protected context:
+      | DatabaseContext<EntityType, DocumentType>
+      | HttpContext<EntityType, DocumentType>
+      | WebSocketContext<EntityType, DocumentType>
+      | BlockchainContext<EntityType, DocumentType>
+      | AnyContext<EntityType, DocumentType>
+  ) {}
 
   /**
    * Executes an aggregation operation on the data source.
@@ -55,9 +57,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (isAggregationParams(paramsOrBuilder)) {
-        query = this.context.queries.createAggregationQuery(paramsOrBuilder);
-      } else if (isQueryBuilder(paramsOrBuilder)) {
+      if (AggregationParams.isAggregationParams(paramsOrBuilder)) {
+        query = paramsOrBuilder;
+      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         throw new RepositoryMethodError(
@@ -65,7 +67,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
         );
       }
 
-      const aggregation = await this.context.collection.aggregate(query);
+      const aggregation = await this.context.source.aggregate(query);
       const conversionMapper = mapper || this.context.mapper;
 
       if (Array.isArray(aggregation)) {
@@ -97,18 +99,13 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (isUpdateParams(paramsOrBuilder)) {
-        const { updates, where, methods } = paramsOrBuilder;
+      if (UpdateParams.isUpdateParams(paramsOrBuilder)) {
+        const { updates, ...rest } = paramsOrBuilder;
         const documents = updates.map((update) =>
           this.context.mapper.fromEntity(update as EntityType)
         );
-
-        query = this.context.queries.createUpdateQuery(
-          documents,
-          where,
-          methods
-        );
-      } else if (isQueryBuilder(paramsOrBuilder)) {
+        query = { updates: documents, ...rest };
+      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         throw new RepositoryMethodError(
@@ -116,7 +113,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
         );
       }
 
-      const stats = await this.context.collection.update(query);
+      const stats = await this.context.source.update(query);
 
       return Result.withContent(stats);
     } catch (error) {
@@ -136,7 +133,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
       const documents = entities.map((entity) =>
         this.context.mapper.fromEntity(entity)
       );
-      const inserted = await this.context.collection.insert(documents);
+      const inserted = await this.context.source.insert(documents);
       const newEntities = inserted.map((document) =>
         this.context.mapper.toEntity(document)
       );
@@ -160,9 +157,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (isRemoveParams(paramsOrBuilder)) {
-        query = this.context.queries.createRemoveQuery(paramsOrBuilder);
-      } else if (isQueryBuilder(paramsOrBuilder)) {
+      if (RemoveParams.isRemoveParams(paramsOrBuilder)) {
+        query = paramsOrBuilder;
+      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         throw new RepositoryMethodError(
@@ -170,7 +167,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
         );
       }
 
-      const stats = await this.context.collection.remove(query);
+      const stats = await this.context.source.remove(query);
 
       return Result.withContent(stats);
     } catch (error) {
@@ -191,15 +188,15 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     try {
       let query: Query;
 
-      if (isCountParams(paramsOrBuilder)) {
-        query = this.context.queries.createCountQuery(paramsOrBuilder);
-      } else if (isQueryBuilder(paramsOrBuilder)) {
+      if (CountParams.isCountParams(paramsOrBuilder)) {
+        query = paramsOrBuilder;
+      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         query = {};
       }
 
-      const count = await this.context.collection.count(query);
+      const count = await this.context.source.count(query);
 
       return Result.withContent(count);
     } catch (error) {
@@ -219,15 +216,15 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
   ): Promise<Result<EntityType[]>> {
     try {
       let query: Query;
-      if (isFindParams(paramsOrBuilder)) {
-        query = this.context.queries.createFindQuery(paramsOrBuilder);
-      } else if (isQueryBuilder(paramsOrBuilder)) {
+      if (FindParams.isFindParams(paramsOrBuilder)) {
+        query = paramsOrBuilder;
+      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
         query = paramsOrBuilder.build();
       } else {
         query = {};
       }
 
-      const documents = await this.context.collection.find(query);
+      const documents = await this.context.source.find(query);
 
       return Result.withContent(
         documents.map((document) => this.context.mapper.toEntity(document))

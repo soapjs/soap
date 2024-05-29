@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type UpdateStats = {
   status: string;
   modifiedCount?: number;
@@ -10,7 +11,7 @@ export type RemoveStats = {
   deletedCount?: number;
 };
 
-export type UnknownObject = { [key: string]: unknown };
-export type Query = string | Array<unknown> | UnknownObject;
+export type AnyObject = { [key: string]: any };
+export type Query = unknown;
 export type Sort = { [field: string]: number };
 export type Filter = { field: string; name: string };

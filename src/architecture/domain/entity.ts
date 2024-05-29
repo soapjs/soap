@@ -1,29 +1,29 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { UnknownObject } from './types';
+import { AnyObject } from "./types";
 
 /**
- * Represents an abstract Entity class.
- * @abstract
+ * Represents an Entity interface.
+ * @interface
  * @template ObjectType - The type of the JSON representation of the entity.
  * @template RestType - The type of additional properties in the entity.
  */
-export abstract class Entity<ObjectType = UnknownObject, RestType = UnknownObject> {
+export interface Entity<ObjectType = AnyObject, RestType = AnyObject> {
   /**
    * The unique identifier of the entity.
    * @type {string}
    */
-  public id?: string;
+  id?: string;
 
   /**
    * Additional properties of the entity.
    * @type {RestType | undefined}
    */
-  public rest?: RestType;
+  rest?: RestType;
 
   /**
    * Converts the entity to its JSON representation.
-   * @abstract
+   * @interface
    * @returns {ObjectType} The JSON representation of the entity.
    */
-  public abstract toJson(): ObjectType;
+  toJson(): ObjectType;
 }

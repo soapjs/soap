@@ -1,41 +1,36 @@
 import { Route } from "./route";
 
 /**
- * Abstract class representing a basic router.
+ * Router interface.
  */
-export abstract class Router {
+export interface Router {
   /**
-   * Constructs a new router.
-   * @param version Optional version prefix for the router.
-   * @param versionPrefix Prefix for the version in the URL, defaults to "v".
+   * Optional prefix for the API routes.
+   * @type {string}
    */
-  constructor(
-    public readonly version?: string,
-    public readonly versionPrefix = "v"
-  ) {}
-
+  readonly prefix?: string;
   /**
-   * Returns the versioned path.
+   * Optional version prefix for the router. If provided, each route path will be prefixed with this value (e.g., 'v1').
+   * If not provided, routes will not be prefixed.
+   * @type {string}
    */
-  get versionPath() {
-    return this.version ? `/${this.versionPrefix}${this.version}` : "";
-  }
+  readonly apiVersion?: string;
 
   /**
    * Initializes the router with required components.
    * @param args Configuration arguments.
    */
-  public abstract initialize(...args: unknown[]);
+  initialize(...args: unknown[]);
 
   /**
    * Sets up the routes for the router.
    * @param args Configuration arguments.
    */
-  public abstract setupRoutes(...args: unknown[]): void;
+  setupRoutes(...args: unknown[]): void;
 
   /**
    * Mounts a route or a set of routes.
    * @param data Route or set of routes to mount.
    */
-  public abstract mount(data: Route | Route[]);
+  mount(data: Route | Route[]);
 }

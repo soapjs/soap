@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Middleware } from "./middleware";
+import { Middleware } from "../middleware";
 
 /**
  * Represents options for validation middleware.
  */
-export type ValidationOptions = {
+export type RouteValidationOptions = {
   /**
    * The name of the validator to be used.
    */
@@ -13,6 +13,10 @@ export type ValidationOptions = {
    * The schema for validation.
    */
   schema: any;
+  /**
+   *
+   */
+  [key: string]: unknown;
 };
 
 /**
@@ -43,8 +47,8 @@ export type ValidationResult = {
 export interface ValidationMiddleware extends Middleware {
   /**
    * Validates a request.
-   * @param {ValidationOptions} options Additional options for validation.
+   * @param {RouteValidationOptions} options Additional options for validation.
    * @returns The validation result.
    */
-  use(options: ValidationOptions): any;
+  use(options: RouteValidationOptions): any;
 }
