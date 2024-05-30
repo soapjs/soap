@@ -13,17 +13,19 @@ import {
 
 /**
  * Represents a ReadOnlyRepository interface.
- * @interface
+ * @abstract
  * @template EntityType - The type of the entity in the repository.
  */
-export interface ReadOnlyRepository<EntityType = unknown> {
+export abstract class ReadOnlyRepository<EntityType = unknown> {
   /**
    * Retrieves the count of entities based on the provided parameters or query builder.
    * @interface
    * @param {CountParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for counting entities.
    * @returns {Promise<Result<number>>} A promise that resolves to the count of entities.
    */
-  count(paramsOrBuilder?: CountParams | QueryBuilder): Promise<Result<number>>;
+  abstract count(
+    paramsOrBuilder?: CountParams | QueryBuilder
+  ): Promise<Result<number>>;
 
   /**
    * Finds entities based on the provided parameters or query builder.
@@ -31,7 +33,7 @@ export interface ReadOnlyRepository<EntityType = unknown> {
    * @param {FindParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for finding entities.
    * @returns {Promise<Result<EntityType[]>>} A promise that resolves to an array of found entities.
    */
-  find(
+  abstract find(
     paramsOrBuilder?: FindParams | QueryBuilder
   ): Promise<Result<EntityType[]>>;
 }
@@ -42,8 +44,10 @@ export interface ReadOnlyRepository<EntityType = unknown> {
  * @template EntityType - The type of the entity in the repository.
  * @template DocumentType - The type of the document in the repository.
  */
-export interface Repository<EntityType = unknown, DocumentType = unknown>
-  extends ReadOnlyRepository<EntityType> {
+export abstract class Repository<
+  EntityType = unknown,
+  DocumentType = unknown
+> extends ReadOnlyRepository<EntityType> {
   /**
    * Executes an aggregation operation on the data source.
    *
@@ -52,7 +56,7 @@ export interface Repository<EntityType = unknown, DocumentType = unknown>
    *
    * @returns {Promise<Result<ResultType, Error>>} The result of the aggregation operation.
    */
-  aggregate<
+  abstract aggregate<
     ResultType = EntityType | EntityType[],
     AggregationType = DocumentType
   >(
@@ -62,29 +66,29 @@ export interface Repository<EntityType = unknown, DocumentType = unknown>
 
   /**
    * Updates entities based on the provided parameters or query builder.
-   * @interface
+   * @abstract
    * @param {UpdateParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for updating entities.
    * @returns {Promise<Result<UpdateStats>>} A promise that resolves to the update statistics.
    */
-  update(
+  abstract update(
     paramsOrBuilder: UpdateParams | QueryBuilder
   ): Promise<Result<UpdateStats>>;
 
   /**
    * Adds entities to the repository.
-   * @interface
+   * @abstract
    * @param {EntityType[]} entities - An array of entities to be added.
    * @returns {Promise<Result<EntityType[]>>} A promise that resolves to an array of added entities.
    */
-  add(entities: EntityType[]): Promise<Result<EntityType[]>>;
+  abstract add(entities: EntityType[]): Promise<Result<EntityType[]>>;
 
   /**
    * Removes entities based on the provided parameters or query builder.
-   * @interface
+   * @abstract
    * @param {RemoveParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for removing entities.
    * @returns {Promise<Result<RemoveStats>>} A promise that resolves to the remove statistics.
    */
-  remove(
+  abstract remove(
     paramsOrBuilder: RemoveParams | QueryBuilder
   ): Promise<Result<RemoveStats>>;
 }
