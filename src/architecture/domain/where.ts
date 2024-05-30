@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+
+import { IdType } from "./id-type";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type WhereOperator =
   | "eq"
@@ -195,14 +198,15 @@ export class Where {
 
   /**
    * Get the value of the key.
-   * @param {string} key - The key to get the value for.
+   * @param {string | IdType} key - The key to get the value for.
    * @returns {Where} The current Where instance.
    */
-  valueOf(key: string): Where {
+  valueOf(key: string | IdType): Where {
+    const prop = typeof key === "string" ? key : `#id_type#${key.name}`;
     if (this._registry.at(-1) === "valueOf") {
-      this._keys.push(key);
+      this._keys.push(prop);
     } else {
-      this._keys = [key];
+      this._keys = [prop];
     }
     this._registry.push("valueOf");
     return this;
