@@ -16,3 +16,6 @@ export * from "./domain/params";
 export * from "./domain/query-builder";
 export * from "./domain/where";
 export * from "./domain/id-type";
+
+export * from "./decorators";
+export * from "./types";

@@ -7,18 +7,23 @@ export class UndefinedEnviromentVariableError extends Error {
 }
 
 /**
- * Represents a configuration variables class that provides access to environment variables and values from a .env file.
+ * Represents a configuration variables class that provides access to environment variables
+ * and values from a .env file.
  * @class
  */
 export class ConfigVars {
   private dotEnv;
 
   /**
-   * Constructs a new instance of ConfigVars.
+   * Constructs a new instance of ConfigVars. If the path to the env file is not provided,
+   * the config will be read from process.env.
+   *
    * @param {string} [envPath] - The path to the .env file.
    */
   constructor(envPath?: string) {
-    this.dotEnv = readEnvFile(envPath);
+    if (envPath) {
+      this.dotEnv = readEnvFile(envPath);
+    }
   }
 
   /**
@@ -28,10 +33,18 @@ export class ConfigVars {
    * @returns {unknown} The value of the environment variable.
    */
   private getEnv(name: string, throwIfUndefined: boolean): unknown {
-    const v = process.env[name] || this.dotEnv[name];
+    let v;
+
+    try {
+      v = process.env[name] || this.dotEnv[name];
+    } catch (error) {
+      //
+    }
+
     if (throwIfUndefined && v === undefined) {
       throw new UndefinedEnviromentVariableError(name);
     }
+
     return v;
   }
 

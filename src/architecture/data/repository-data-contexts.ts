@@ -2,6 +2,20 @@
 import { Source } from "./source";
 import { Mapper } from "./mapper";
 
+export interface DataContext<EntityType, ModelType> {
+  /**
+   * The source representing the data storage.
+   * @type {Source<ModelType>}
+   */
+  source: Source<ModelType>;
+
+  /**
+   * The mapper used to map between entity and model types.
+   * @type {Mapper<EntityType, ModelType>}
+   */
+  mapper: Mapper<EntityType, ModelType>;
+}
+
 /**
  * NonDatabaseSource interface that defines methods for interacting with a non-database data source.
  */
