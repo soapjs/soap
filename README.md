@@ -89,7 +89,7 @@ export class GetCustomerDetailsRoute extends Soap.GetRoute {
 
     // ... other setup operations
 
-    return new GetCustomerDetailsRoute('shop/customers/:id', handler, {
+    return new GetCustomerDetailsRoute('customers/:id', handler, {
       io: new GetCustomerDetailsRouteIO()
     });
   }
@@ -122,10 +122,11 @@ export class GetCustomerDetailsRouteIO implements Soap.RouteIO<Customer, GetCust
       const message = result.failure.error.message || 'YOUR MESSAGE';
       
       response.status(status).send(message);
+    } else {
+      const { ... } = result.content;
+      // map result content to output if needed
+      response.status(200).send({...});
     }
-    const { ... } = result.content;
-    // map result content to output if needed
-    return response.status(200).send({...});
   }
   
   public fromRequest(request: Request): string {
@@ -318,6 +319,8 @@ export class Customer {
     @EntityField('customerName')
     name: string;
   }
+
+  const customerSource = new MongoSource<CustomerMongoModel>(..., { modelClass: CustomerMongoModel });
   ```
 
 #### Type-based Models with Manual Field Mappings
@@ -334,7 +337,7 @@ export class Customer {
     customerName: { name: 'name', type: 'string' }
   };
 
-  const customerSource = new MongoSource<Customer>(..., { modelFieldMappings: fieldMappings });
+  const customerSource = new MongoSource<CustomerMongoModel>(..., { modelFieldMappings: fieldMappings });
   ```
 
 **Integration with Database Queries**:
