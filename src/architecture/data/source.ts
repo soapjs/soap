@@ -85,9 +85,9 @@ export interface Source<DocumentType = unknown> {
    * Abstract method to start a database session.
    *
    * @param {AnyObject} [options] Session options.
-   * @returns {Promise<void>} A promise that resolves when the session starts.
+   * @returns {Promise<SessionType>} A promise that resolves when the session starts.
    */
-  startSession(options?: AnyObject): Promise<void>;
+  startSession<SessionType = any>(options?: AnyObject): Promise<SessionType>;
 
   /**
    * Abstract method to start a database transaction.
