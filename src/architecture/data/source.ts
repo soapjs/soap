@@ -82,6 +82,14 @@ export interface Source<DocumentType = unknown> {
   remove(query: Query): Promise<RemoveStats>;
 
   /**
+   * Abstract method to start a database session.
+   *
+   * @param {AnyObject} [options] Session options.
+   * @returns {Promise<void>} A promise that resolves when the session starts.
+   */
+  startSession(options?: AnyObject): Promise<void>;
+
+  /**
    * Abstract method to start a database transaction.
    *
    * @param {AnyObject} [options] Transaction options.
