@@ -29,9 +29,8 @@ import { RepositoryMethodError } from "../domain/errors";
 export class RepositoryImpl<EntityType, DocumentType = unknown>
   implements Repository<EntityType, DocumentType>
 {
-  
   constructor(
-    protected context:
+    public readonly context:
       | DatabaseContext<EntityType, DocumentType>
       | HttpContext<EntityType, DocumentType>
       | WebSocketContext<EntityType, DocumentType>
@@ -234,3 +233,9 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
     }
   }
 }
+
+export const isRepository = <T = unknown>(
+  value: unknown
+): value is RepositoryImpl<T> => {
+  return typeof value === "object" && Object.hasOwn(value, "context");
+};

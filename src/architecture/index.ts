@@ -4,7 +4,11 @@ export * from "./data/collection.errors";
 export * from "./data/mapper";
 export * from "./data/query-factory";
 export * from "./data/repository-impl";
-export * from "./data/transaction-manager";
+export * from "./data/transaction";
+export * from "./data/transaction-executor";
+export * from "./data/transaction-storage";
+export * from "./data/database-session";
+export * from "./data/database-session-registry";
 
 export * from "./domain/entity";
 export * from "./domain/enums";

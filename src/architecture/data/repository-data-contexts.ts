@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Source } from "./source";
 import { Mapper } from "./mapper";
+import { DatabaseSessionRegistry } from "./database-session-registry";
 
 export interface DataContext<EntityType, ModelType> {
   /**
@@ -86,6 +87,12 @@ export class DatabaseContext<EntityType = unknown, ModelType = unknown> {
   public source: Source<ModelType>;
 
   /**
+   * The sessions factory.
+   * @type {DatabaseSessionRegistry}
+   */
+  public sessions: DatabaseSessionRegistry;
+
+  /**
    * The mapper used to map between entity and model types.
    * @type {Mapper<EntityType, ModelType>}
    */
@@ -94,15 +101,17 @@ export class DatabaseContext<EntityType = unknown, ModelType = unknown> {
   /**
    * Constructs a DatabaseContext.
    * @param {Source<ModelType>} source - The source representing the data storage.
-   * @param {QueryFactory} queries - The queries used to interact with the database.
    * @param {Mapper<EntityType, ModelType>} [mapper] - The mapper used to map between entity and model types.
+   * @param {DatabaseSessionRegistry} [sessions] - The data storage session factory.
    */
   constructor(
     source: Source<ModelType>,
-    mapper: Mapper<EntityType, ModelType>
+    mapper: Mapper<EntityType, ModelType>,
+    sessions: DatabaseSessionRegistry
   ) {
     this.source = source;
     this.mapper = mapper;
+    this.sessions = sessions;
   }
 }
 

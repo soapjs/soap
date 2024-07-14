@@ -236,10 +236,12 @@ export class Dependencies implements Soap.Dependencies {
     // 1. MongoSource: Represents the MongoDB collection using the MongoDB client. 
     //    'CustomerMongoModel' refers to the model class that maps the MongoDB collection 'customers'.
     // 2. CustomerMongoMapper: Handles the mapping of data between the domain entity and the database model.
-    // 3. The 'modelClass' option specifies the model class that includes decorators for field mapping.
+    // 3. MongoSessions: Represents the Mongo database session registry.
+    // 4. The 'modelClass' option specifies the model class that includes decorators for field mapping.
     const context = new Soap.DatabaseContext(
       new MongoSource<CustomerMongoModel>(mongoClient, 'customers'),
       new CustomerMongoMapper(),
+      new MongoSessions(),
       { modelClass: CustomerMongoModel }
     );
 
@@ -345,6 +347,130 @@ export class Customer {
 - **Without Decorators**: You must manually ensure that field names in `Where` clauses match those defined in `modelFieldMappings`. If no mappings are defined, the field names used in queries and `Where` must directly correspond to the database field names.
 
 Choosing between class-based and type-based models impacts how you interact with the database in `@soapjs/soap`. Making each suitable for different scenarios and database technologies.
+
+### Transaction and TransactionExecutor
+`@soapjs/soap` provides a structured way to manage transactions through the `Transaction` and `TransactionExecutor` classes. This approach ensures that all operations within a transaction are either fully completed or fully rolled back, maintaining data integrity.
+
+#### Using Transactions with Decorators
+- **Use when**: You want to manage complex operations involving multiple repositories or services within a single transaction.
+- **Benefits**: Ensures atomicity, consistency, isolation, and durability (ACID) in your operations. It simplifies error handling and rollback mechanisms.
+- **Example**:
+  ```typescript
+  import { Transaction, TransactionExecutor, Result } from '@soapjs/soap';
+  import { Repository } from './repository';
+  import { Service } from './service';
+
+  class MyTransaction extends Transaction<void> {
+    @WithSession()
+    private customerRepo: Repository<Customer>;
+
+    @WithSession()
+    private orderRepo: Repository<Order>;
+
+    public async perform(): Promise<Result<void>> {
+      const customerResult = await this.customerRepo.create({ name: 'John Doe' });
+      if (customerResult.isFailure) {
+        this.abort('Failed to create customer');
+      }
+
+      const orderResult = await this.orderRepo.create({ customerId: customerResult.value.id, product: 'Soap' });
+      if (orderResult.isFailure) {
+        this.abort('Failed to create order');
+      }
+
+      return Result.withSuccess();
+    }
+  }
+
+  async function executeTransaction() {
+    const transaction = new MyTransaction();
+    const result = await new TransactionExecutor(
+      TransactionStorage.getInstance()
+    ).execute(transaction);
+    
+    if (result.isFailure) {
+      console.error('Transaction failed:', result.error);
+    } else {
+      console.log('Transaction succeeded');
+    }
+  }
+
+  executeTransaction();
+  ```
+
+#### Using Transactions without Decorators
+- **Use when**: You prefer not to use decorators, perhaps due to project constraints or personal preference.
+- **Benefits**: Provides manual control over session management and transaction handling without relying on decorators.
+- **Setup**:
+  - Manually create and manage sessions within your transaction class.
+  - This approach is necessary if you opt-out of using decorators.
+
+**Example**:
+  ```typescript
+  import { Transaction, TransactionExecutor, Result } from '@soapjs/soap';
+  import { Repository } from './repository';
+  import { DatabaseContext } from './repository-data-contexts';
+  import { MyDatabaseSession } from './my-database-session';
+
+  class MyTransaction extends Transaction<void> {
+    private customerRepo: Repository<Customer>;
+    private orderRepo: Repository<Order>;
+
+    constructor(customerRepo: Repository<Customer>, orderRepo: Repository<Order>) {
+      super(customerRepo, orderRepo);
+      this.customerRepo = customerRepo;
+      this.orderRepo = orderRepo;
+    }
+
+    public async perform(): Promise<Result<void>> {
+      const customerSession = new MyDatabaseSession(this.id);
+      const orderSession = new MyDatabaseSession(this.id);
+      this.sessions.push(customerSession, orderSession);
+
+      const customerResult = await this.customerRepo.create({ name: 'John Doe' }, customerSession);
+      if (customerResult.isFailure) {
+        await customerSession.rollbackTransaction();
+        await orderSession.rollbackTransaction();
+        this.abort('Failed to create customer');
+      }
+
+      const orderResult = await this.orderRepo.create({ customerId: customerResult.value.id, product: 'Soap' }, orderSession);
+      if (orderResult.isFailure) {
+        await customerSession.rollbackTransaction();
+        await orderSession.rollbackTransaction();
+        this.abort('Failed to create order');
+      }
+
+      await customerSession.commitTransaction();
+      await orderSession.commitTransaction();
+
+      return Result.withSuccess();
+    }
+  }
+
+  async function executeTransaction() {
+    const customerRepo = new Repository<Customer>();
+    const orderRepo = new Repository<Order>();
+    const transaction = new MyTransaction(customerRepo, orderRepo);
+    const result = await new TransactionExecutor(
+      TransactionStorage.getInstance()
+    ).execute(transaction);
+    
+    if (result.isFailure) {
+      console.error('Transaction failed:', result.error);
+    } else {
+      console.log('Transaction succeeded');
+    }
+  }
+
+  executeTransaction();
+  ```
+
+**Integration with Services and Error Handling**:
+- **With Decorators**: The session management is automatic, and you can focus on the business logic in the `perform` method.
+- **Without Decorators**: You must manually manage sessions and ensure they are properly committed or rolled back based on the results of your operations.
+
+By using `Transaction` and `TransactionExecutor` from `@soapjs/soap`, you ensure that all operations within a transaction are atomic and consistent, simplifying error handling and rollback mechanisms.
 
 ### Service and Toolset
 Services are used to communicate with other APIs or any other external data sources (not databases; that's what repositories and collections are for). Toolsets, on the other hand, are categorized sets of tools. Instead of having a general `Utils` or manager, it's a component where you can place any methods that don't fit into other patterns. They can be static or instantiated, and you can obtain them via a container.

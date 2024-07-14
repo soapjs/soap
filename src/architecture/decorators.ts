@@ -1,6 +1,5 @@
 import "reflect-metadata";
 
-import "reflect-metadata";
 import { FieldInfo } from "./types";
 
 /**
@@ -49,3 +48,15 @@ export class FieldResolver<T> {
     return undefined;
   }
 }
+
+export type WithSessionOptions = {
+  type?: string;
+  priority?: number;
+  scope?: string;
+};
+
+export const WithSession = (options?: WithSessionOptions) => {
+  return function (target: any, propertyKey: string | symbol) {
+    Reflect.defineMetadata("withSession", options || true, target, propertyKey);
+  };
+};

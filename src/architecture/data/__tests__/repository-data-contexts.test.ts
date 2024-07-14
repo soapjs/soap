@@ -1,15 +1,10 @@
-import { UpdateStats, RemoveStats, AnyObject } from "../../domain/types";
-import { Mapper } from "../mapper";
-import { QueryFactory } from "../query-factory";
 import {
   DatabaseContext,
   HttpContext,
   WebSocketContext,
   BlockchainContext,
   AnyContext,
-  NonDatabaseSource,
 } from "../repository-data-contexts";
-import { Source } from "../source";
 
 const MockSource = {
   collectionName: "string",
@@ -38,12 +33,20 @@ const MockNonDatabaseSource = {
   insert: jest.fn(),
   remove: jest.fn(),
 };
+const MockSessionRegistry = {
+  transactionStorage: null,
+  createSession: jest.fn(),
+  deleteSession: jest.fn(),
+  getSession: jest.fn(),
+  hasSession: jest.fn(),
+};
 
 describe("DatabaseContext", () => {
   it("should create an instance of DatabaseContext", () => {
     const source: any = MockSource;
     const mapper = MockMapper;
-    const context = new DatabaseContext(source, mapper);
+    const sessions = MockSessionRegistry;
+    const context = new DatabaseContext(source, mapper, sessions);
     expect(context.isDatabaseContext).toBe(true);
     expect(context.source).toBe(source);
     expect(context.mapper).toBe(mapper);
@@ -52,7 +55,8 @@ describe("DatabaseContext", () => {
   it("should identify as DatabaseContext", () => {
     const source: any = MockSource;
     const mapper = MockMapper;
-    const context = new DatabaseContext(source, mapper);
+    const sessions = MockSessionRegistry;
+    const context = new DatabaseContext(source, mapper, sessions);
     expect(DatabaseContext.isDatabaseContext(context)).toBe(true);
   });
 });

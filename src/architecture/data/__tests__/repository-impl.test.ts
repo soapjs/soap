@@ -29,6 +29,13 @@ describe("RepositoryImpl class", () => {
       toEntity: jest.fn((doc) => doc),
       fromEntity: jest.fn((entity) => entity),
     },
+    sessions: {
+      transactionStorage: null,
+      createSession: jest.fn(),
+      deleteSession: jest.fn(),
+      getSession: jest.fn(),
+      hasSession: jest.fn(),
+    },
   };
 
   const repository = new RepositoryImpl(dataContext);
