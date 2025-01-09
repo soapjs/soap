@@ -1,27 +1,29 @@
 import { AsyncLocalStorage } from "async_hooks";
 
+const _asyncLocalStorage = new AsyncLocalStorage<string>();
+
 /**
- * Class for managing transaction storage using AsyncLocalStorage.
+ * Class for managing transaction scope using AsyncLocalStorage.
  */
-export class TransactionStorage {
-  private static instance: TransactionStorage;
+export class TransactionScope {
+  private static instance: TransactionScope;
   private asyncLocalStorage: AsyncLocalStorage<string>;
 
   /**
    * Private constructor to ensure singleton pattern.
    */
-  private constructor() {
-    this.asyncLocalStorage = new AsyncLocalStorage<string>();
+  private constructor(asyncLocalStorage = _asyncLocalStorage) {
+    this.asyncLocalStorage = asyncLocalStorage;
   }
 
   /**
-   * Gets the singleton instance of the TransactionStorage.
+   * Gets the singleton instance of the TransactionScope.
    *
-   * @returns {TransactionStorage} - The singleton instance.
+   * @returns {TransactionScope} - The singleton instance.
    */
-  public static getInstance(): TransactionStorage {
+  public static getInstance(): TransactionScope {
     if (!this.instance) {
-      this.instance = new TransactionStorage();
+      this.instance = new TransactionScope();
     }
     return this.instance;
   }

@@ -9,7 +9,7 @@ import {
 } from "../route";
 
 describe("Routes", () => {
-  const handler = () => Result.withoutContent();
+  const handler = () => Result.withSuccess();
   const options: any = { middleware: [] };
   describe("Route", () => {
     it("should create a new Route instance", () => {

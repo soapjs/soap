@@ -4,9 +4,9 @@ export * from "./data/collection.errors";
 export * from "./data/mapper";
 export * from "./data/query-factory";
 export * from "./data/repository-impl";
-export * from "./data/transaction";
-export * from "./data/transaction-executor";
-export * from "./data/transaction-storage";
+export * from "./domain/transaction";
+export * from "./domain/transaction-runner";
+export * from "./domain/transaction-scope";
 export * from "./data/database-session";
 export * from "./data/database-session-registry";
 
@@ -23,5 +23,5 @@ export * from "./domain/query-builder";
 export * from "./domain/where";
 export * from "./domain/id-type";
 
-export * from "./decorators";
+export * from "./domain/decorators";
 export * from "./types";

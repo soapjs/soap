@@ -1,7 +1,8 @@
-import { Result } from "../domain/result";
-import { DatabaseContext } from "./repository-data-contexts";
-import { isRepository } from "./repository-impl";
-import { DatabaseSession } from "./database-session";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Result } from "./result";
+import { DatabaseContext } from "../data/repository-data-contexts";
+import { isRepository } from "../data/repository-impl";
+import { DatabaseSession } from "../data/database-session";
 
 /**
  * Abstract class representing a transaction.
@@ -28,7 +29,7 @@ export abstract class Transaction<T = unknown> {
     const propertyNames = Object.getOwnPropertyNames(this) as (keyof this)[];
     for (const propertyName of propertyNames) {
       const propertyValue = this[propertyName];
-      if (Reflect.getMetadata("withSession", this, <string>propertyName)) {
+      if (Reflect.getMetadata("useSession", this, <string>propertyName)) {
         components.push(propertyValue);
       }
     }
@@ -41,7 +42,7 @@ export abstract class Transaction<T = unknown> {
    */
   public init(): DatabaseSession[] {
     this.components.forEach((component) => {
-      if (Reflect.getMetadata("withSession", component)) {
+      if (Reflect.getMetadata("useSession", component)) {
         if (
           isRepository(component) &&
           DatabaseContext.isDatabaseContext(component.context) &&
@@ -70,7 +71,7 @@ export abstract class Transaction<T = unknown> {
    * @param {...unknown[]} args - The arguments required for the transaction operation.
    * @returns {Promise<Result<T>>} - The result of the transaction operation.
    */
-  public abstract perform(...args: unknown[]): Promise<Result<T>>;
+  public abstract execute(...args: unknown[]): Promise<Result<T>>;
 
   /**
    * Aborts the transaction by throwing an error with the given message.

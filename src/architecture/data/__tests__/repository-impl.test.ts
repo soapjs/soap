@@ -30,7 +30,7 @@ describe("RepositoryImpl class", () => {
       fromEntity: jest.fn((entity) => entity),
     },
     sessions: {
-      transactionStorage: null,
+      transactionScope: null,
       createSession: jest.fn(),
       deleteSession: jest.fn(),
       getSession: jest.fn(),
@@ -54,7 +54,7 @@ describe("RepositoryImpl class", () => {
       aggregationResult
     );
     const result = await repository.aggregate(params);
-    expect(result).toEqual(Result.withContent(aggregationResult));
+    expect(result).toEqual(Result.withSuccess(aggregationResult));
   });
 
   test("should update data", async () => {
@@ -62,7 +62,7 @@ describe("RepositoryImpl class", () => {
     const updateStats = { modifiedCount: 2 } as UpdateStats;
     (dataContext.source.update as jest.Mock).mockResolvedValueOnce(updateStats);
     const result = await repository.update(params);
-    expect(result).toEqual(Result.withContent(updateStats));
+    expect(result).toEqual(Result.withSuccess(updateStats));
   });
 
   test("should add data", async () => {
@@ -78,7 +78,7 @@ describe("RepositoryImpl class", () => {
       addedEntities
     );
     const result = await repository.add(entities);
-    expect(result).toEqual(Result.withContent(addedEntities));
+    expect(result).toEqual(Result.withSuccess(addedEntities));
   });
 
   test("should remove data", async () => {
@@ -86,7 +86,7 @@ describe("RepositoryImpl class", () => {
     const removeStats = { deletedCount: 2 } as RemoveStats;
     (dataContext.source.remove as jest.Mock).mockResolvedValueOnce(removeStats);
     const result = await repository.remove(params);
-    expect(result).toEqual(Result.withContent(removeStats));
+    expect(result).toEqual(Result.withSuccess(removeStats));
   });
 
   test("should count data", async () => {
@@ -94,7 +94,7 @@ describe("RepositoryImpl class", () => {
     const count = 10;
     (dataContext.source.count as jest.Mock).mockResolvedValueOnce(count);
     const result = await repository.count(params);
-    expect(result).toEqual(Result.withContent(count));
+    expect(result).toEqual(Result.withSuccess(count));
   });
 
   test("should find data", async () => {
@@ -105,7 +105,7 @@ describe("RepositoryImpl class", () => {
     ];
     (dataContext.source.find as jest.Mock).mockResolvedValueOnce(entities);
     const result = await repository.find(params);
-    expect(result).toEqual(Result.withContent(entities));
+    expect(result).toEqual(Result.withSuccess(entities));
   });
 
   test("should handle errors during aggregation", async () => {

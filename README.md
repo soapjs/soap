@@ -15,12 +15,13 @@ While you are welcome to download and use the packages, please be aware that the
 **Current and Upcoming Features:**
 - Our development roadmap includes releasing fully documented and tested packages for several frameworks and technologies:
   - **Express Framework Integration** (`@soapjs/soap-express`)
+  - **NestJS Framework Integration** (`@soapjs/soap-nestjs`)
   - **Authentication** (`@soapjs/soap-auth`)
   - **Database Integration** for:
     - MongoDB (`@soapjs/soap-node-mongo`)
+    - PostgreSQL (`@soapjs/soap-node-postgres`)
     - Redis (`@soapjs/soap-node-redis`)
     - MySQL (`@soapjs/soap-node-mysql`)
-    - PostgreSQL (`@soapjs/soap-node-postgres`)
   - **CLI Updates**: We are also focusing on updating the Command Line Interface to enhance usability and features.
 
 **Future Expansions:**
@@ -198,7 +199,7 @@ export class ProcessOrderUseCase implements Soap.UseCase<OrderConfirmation>{
   ): Promise<Result<OrderConfirmation>> {
     let confirmation: OrderConfirmation;
     // logic ...
-    return Result.withContent(confirmation);
+    return Result.withSuccess(confirmation);
   }
 }
 ```
@@ -348,129 +349,22 @@ export class Customer {
 
 Choosing between class-based and type-based models impacts how you interact with the database in `@soapjs/soap`. Making each suitable for different scenarios and database technologies.
 
-### Transaction and TransactionExecutor
-`@soapjs/soap` provides a structured way to manage transactions through the `Transaction` and `TransactionExecutor` classes. This approach ensures that all operations within a transaction are either fully completed or fully rolled back, maintaining data integrity.
+### Transactions
+Transactions are used to ensure that a sequence of operations on a database is executed atomically. This means either all operations succeed, or none of them are applied, maintaining data consistency and integrity.
 
-#### Using Transactions with Decorators
-- **Use when**: You want to manage complex operations involving multiple repositories or services within a single transaction.
-- **Benefits**: Ensures atomicity, consistency, isolation, and durability (ACID) in your operations. It simplifies error handling and rollback mechanisms.
-- **Example**:
-  ```typescript
-  import { Transaction, TransactionExecutor, Result } from '@soapjs/soap';
-  import { Repository } from './repository';
-  import { Service } from './service';
+In this framework, transactions can be implemented in the following ways:
 
-  class MyTransaction extends Transaction<void> {
-    @WithSession()
-    private customerRepo: Repository<Customer>;
+1. **Custom Transaction Methods in Repositories**
+2. **Transaction Class and TransactionRunner**
+3. **Declarative Transactions with Decorators**
 
-    @WithSession()
-    private orderRepo: Repository<Order>;
+[Click here for details](TRANSACTIONS.md)
 
-    public async perform(): Promise<Result<void>> {
-      const customerResult = await this.customerRepo.create({ name: 'John Doe' });
-      if (customerResult.isFailure) {
-        this.abort('Failed to create customer');
-      }
+### Using Inject and Injectable Decorators
 
-      const orderResult = await this.orderRepo.create({ customerId: customerResult.value.id, product: 'Soap' });
-      if (orderResult.isFailure) {
-        this.abort('Failed to create order');
-      }
+The decorators **`@Injectable`** and **`@Inject`** provide a simple, framework-agnostic way to mark classes and class members for dependency injection. By default, **no** actual IoC container is included; instead, you set up your classes with these decorators, and then a **separate adapter** (for NestJS, Inversify, or another DI framework) can interpret the metadata and perform the actual binding/resolution.
 
-      return Result.withSuccess();
-    }
-  }
-
-  async function executeTransaction() {
-    const transaction = new MyTransaction();
-    const result = await new TransactionExecutor(
-      TransactionStorage.getInstance()
-    ).execute(transaction);
-    
-    if (result.isFailure) {
-      console.error('Transaction failed:', result.error);
-    } else {
-      console.log('Transaction succeeded');
-    }
-  }
-
-  executeTransaction();
-  ```
-
-#### Using Transactions without Decorators
-- **Use when**: You prefer not to use decorators, perhaps due to project constraints or personal preference.
-- **Benefits**: Provides manual control over session management and transaction handling without relying on decorators.
-- **Setup**:
-  - Manually create and manage sessions within your transaction class.
-  - This approach is necessary if you opt-out of using decorators.
-
-**Example**:
-  ```typescript
-  import { Transaction, TransactionExecutor, Result } from '@soapjs/soap';
-  import { Repository } from './repository';
-  import { DatabaseContext } from './repository-data-contexts';
-  import { MyDatabaseSession } from './my-database-session';
-
-  class MyTransaction extends Transaction<void> {
-    private customerRepo: Repository<Customer>;
-    private orderRepo: Repository<Order>;
-
-    constructor(customerRepo: Repository<Customer>, orderRepo: Repository<Order>) {
-      super(customerRepo, orderRepo);
-      this.customerRepo = customerRepo;
-      this.orderRepo = orderRepo;
-    }
-
-    public async perform(): Promise<Result<void>> {
-      const customerSession = new MyDatabaseSession(this.id);
-      const orderSession = new MyDatabaseSession(this.id);
-      this.sessions.push(customerSession, orderSession);
-
-      const customerResult = await this.customerRepo.create({ name: 'John Doe' }, customerSession);
-      if (customerResult.isFailure) {
-        await customerSession.rollbackTransaction();
-        await orderSession.rollbackTransaction();
-        this.abort('Failed to create customer');
-      }
-
-      const orderResult = await this.orderRepo.create({ customerId: customerResult.value.id, product: 'Soap' }, orderSession);
-      if (orderResult.isFailure) {
-        await customerSession.rollbackTransaction();
-        await orderSession.rollbackTransaction();
-        this.abort('Failed to create order');
-      }
-
-      await customerSession.commitTransaction();
-      await orderSession.commitTransaction();
-
-      return Result.withSuccess();
-    }
-  }
-
-  async function executeTransaction() {
-    const customerRepo = new Repository<Customer>();
-    const orderRepo = new Repository<Order>();
-    const transaction = new MyTransaction(customerRepo, orderRepo);
-    const result = await new TransactionExecutor(
-      TransactionStorage.getInstance()
-    ).execute(transaction);
-    
-    if (result.isFailure) {
-      console.error('Transaction failed:', result.error);
-    } else {
-      console.log('Transaction succeeded');
-    }
-  }
-
-  executeTransaction();
-  ```
-
-**Integration with Services and Error Handling**:
-- **With Decorators**: The session management is automatic, and you can focus on the business logic in the `perform` method.
-- **Without Decorators**: You must manually manage sessions and ensure they are properly committed or rolled back based on the results of your operations.
-
-By using `Transaction` and `TransactionExecutor` from `@soapjs/soap`, you ensure that all operations within a transaction are atomic and consistent, simplifying error handling and rollback mechanisms.
+[Click here for details](DI.md)
 
 ### Service and Toolset
 Services are used to communicate with other APIs or any other external data sources (not databases; that's what repositories and collections are for). Toolsets, on the other hand, are categorized sets of tools. Instead of having a general `Utils` or manager, it's a component where you can place any methods that don't fit into other patterns. They can be static or instantiated, and you can obtain them via a container.
@@ -492,7 +386,7 @@ class WeatherServiceImpl implements WeatherService {
     try {
       const response =
         await axios.get(`${this.baseUrl}?q=${city}&appid=${this.apiKey}`);
-      return Result.withContent(Weather.from(response.data));
+      return Result.withSuccess(Weather.from(response.data));
     } catch (error) {
       return Result.withFailure(error);
     }

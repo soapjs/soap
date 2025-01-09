@@ -30,14 +30,14 @@ export class Result<ContentType = void> {
   /**
    * @returns {boolean}
    */
-  public get isFailure(): boolean {
+  public isFailure(): this is Result<ContentType> & { failure: undefined } {
     return this.failure instanceof Failure;
   }
 
   /**
    * @returns {boolean}
    */
-  public get isSuccess(): boolean {
+  public isSuccess(): this is Result<ContentType> & { failure: Failure } {
     return !this.failure;
   }
 
@@ -48,20 +48,10 @@ export class Result<ContentType = void> {
    * @param {ContentType} content
    * @returns {Result<ContentType>}
    */
-  public static withContent<ContentType>(
-    content: ContentType
+  public static withSuccess<ContentType>(
+    content?: ContentType
   ): Result<ContentType> {
     return new Result<ContentType>({ content });
-  }
-
-  /**
-   * Create instance of the Result class with empty content
-   *
-   * @static
-   * @returns {Result<ContentType>}
-   */
-  public static withoutContent<ContentType = any>(): Result<ContentType> {
-    return new Result<ContentType>();
   }
 
   /**

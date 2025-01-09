@@ -70,14 +70,14 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
       const conversionMapper = mapper || this.context.mapper;
 
       if (Array.isArray(aggregation)) {
-        return Result.withContent(
+        return Result.withSuccess(
           aggregation.map((document) =>
             conversionMapper.toEntity(<AggregationType & DocumentType>document)
           ) as ResultType
         );
       }
 
-      return Result.withContent(
+      return Result.withSuccess(
         conversionMapper.toEntity(aggregation) as ResultType
       );
     } catch (error) {
@@ -114,7 +114,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
 
       const stats = await this.context.source.update(query);
 
-      return Result.withContent(stats);
+      return Result.withSuccess(stats);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
@@ -137,7 +137,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
         this.context.mapper.toEntity(document)
       );
 
-      return Result.withContent(newEntities);
+      return Result.withSuccess(newEntities);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
@@ -168,7 +168,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
 
       const stats = await this.context.source.remove(query);
 
-      return Result.withContent(stats);
+      return Result.withSuccess(stats);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
@@ -197,7 +197,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
 
       const count = await this.context.source.count(query);
 
-      return Result.withContent(count);
+      return Result.withSuccess(count);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
@@ -225,7 +225,7 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
 
       const documents = await this.context.source.find(query);
 
-      return Result.withContent(
+      return Result.withSuccess(
         documents.map((document) => this.context.mapper.toEntity(document))
       );
     } catch (error) {

@@ -1,15 +1,15 @@
 import { DatabaseSession } from "./database-session";
-import { TransactionStorage } from "./transaction-storage";
+import { TransactionScope } from "../domain/transaction-scope";
 
 /**
  * Interface representing a registry for managing database sessions.
  */
 export interface DatabaseSessionRegistry {
   /**
-   * The transaction storage instance used for managing transaction contexts.
-   * @type {TransactionStorage}
+   * The transaction scope instance.
+   * @type {TransactionScope}
    */
-  readonly transactionStorage: TransactionStorage;
+  readonly transactionScope: TransactionScope;
 
   /**
    * Creates a new database session.

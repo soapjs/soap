@@ -1,5 +1,4 @@
-import { TransactionStorage } from "../transaction-storage";
-import { AsyncLocalStorage } from "async_hooks";
+import { TransactionScope } from "../transaction-scope";
 
 jest.mock("async_hooks", () => {
   return {
@@ -16,15 +15,15 @@ jest.mock("async_hooks", () => {
   };
 });
 
-describe("TransactionStorage", () => {
-  let transactionStorage: TransactionStorage;
+describe("TransactionScope", () => {
+  let transactionStorage: TransactionScope;
 
   beforeEach(() => {
-    transactionStorage = TransactionStorage.getInstance();
+    transactionStorage = TransactionScope.getInstance();
   });
 
   it("should return the same instance", () => {
-    const anotherInstance = TransactionStorage.getInstance();
+    const anotherInstance = TransactionScope.getInstance();
     expect(transactionStorage).toBe(anotherInstance);
   });
 

@@ -34,7 +34,7 @@ const MockNonDatabaseSource = {
   remove: jest.fn(),
 };
 const MockSessionRegistry = {
-  transactionStorage: null,
+  transactionScope: null,
   createSession: jest.fn(),
   deleteSession: jest.fn(),
   getSession: jest.fn(),
