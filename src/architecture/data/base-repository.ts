@@ -26,7 +26,7 @@ import { RepositoryMethodError } from "../domain/errors";
  *
  * Note: This repository should be used when we do not want to provide methods to modify the contents of collections in the database.
  */
-export class RepositoryImpl<EntityType, DocumentType = unknown>
+export class BaseRepository<EntityType, DocumentType = unknown>
   implements Repository<EntityType, DocumentType>
 {
   constructor(
@@ -236,6 +236,6 @@ export class RepositoryImpl<EntityType, DocumentType = unknown>
 
 export const isRepository = <T = unknown>(
   value: unknown
-): value is RepositoryImpl<T> => {
+): value is BaseRepository<T> => {
   return typeof value === "object" && Object.hasOwn(value, "context");
 };

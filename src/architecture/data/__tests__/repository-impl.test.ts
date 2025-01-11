@@ -5,7 +5,7 @@ import { FindParams } from "../../domain/params";
 import { Result } from "../../domain/result";
 import { Failure } from "../../domain/failure";
 import { UpdateStats, RemoveStats } from "../../domain/types";
-import { RepositoryImpl } from "../repository-impl";
+import { BaseRepository } from "../base-repository";
 import { QueryBuilder } from "../../domain/query-builder";
 
 class MockQueryBuilder extends QueryBuilder {
@@ -14,7 +14,7 @@ class MockQueryBuilder extends QueryBuilder {
   }
 }
 
-describe("RepositoryImpl class", () => {
+describe("BaseRepository class", () => {
   const dataContext: DatabaseContext = {
     isDatabaseContext: true,
     source: {
@@ -38,7 +38,7 @@ describe("RepositoryImpl class", () => {
     },
   };
 
-  const repository = new RepositoryImpl(dataContext);
+  const repository = new BaseRepository(dataContext);
 
   afterEach(() => {
     jest.clearAllMocks();

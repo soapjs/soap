@@ -1,4 +1,4 @@
-# Using SoapJS `@Injectable` and `@Inject`
+# **Dependency Injection decorators: Comprehensive Guide**
 
 The decorators **`@Injectable`** and **`@Inject`** provide a simple, framework-agnostic way to mark classes and class members for dependency injection. By default, **no** actual IoC container is included; instead, you set up your classes with these decorators, and then a **separate adapter** (for NestJS, Inversify, or another DI framework) can interpret the metadata and perform the actual binding/resolution.
 

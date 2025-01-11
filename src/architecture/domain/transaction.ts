@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Result } from "./result";
 import { DatabaseContext } from "../data/repository-data-contexts";
-import { isRepository } from "../data/repository-impl";
+import { isRepository } from "../data/base-repository";
 import { DatabaseSession } from "../data/database-session";
 
 /**

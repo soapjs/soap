@@ -24,12 +24,33 @@ While you are welcome to download and use the packages, please be aware that the
     - MySQL (`@soapjs/soap-node-mysql`)
   - **CLI Updates**: We are also focusing on updating the Command Line Interface to enhance usability and features.
 
+**Changelog:**
+
+More information can be found later in this README.
+
+**New Features**
+- **Event Bus Components:**
+  - Added an `EventBus` interface and implementations for various messaging systems (e.g., RabbitMQ, Kafka).
+  - Introduced support for advanced message processing strategies, including retries, dead-letter queues (DLQs), and message validation.
+
+- **WebSocket Components:**
+  - Added a robust `WebSocketClient` with features like automatic reconnection, rate limiting, subscriptions, and custom authentication strategies.
+  - Added a `CustomWebSocketServer` with client management, message broadcasting, and heartbeat support.
+
+- **Dependency Injection Support:**
+  - Introduced decorators for dependency injection to enable seamless integration with frameworks like `inversify` or `nestjs` without directly coupling the core logic to these libraries.
+
+**Enhancements**
+- **Database Transactions:**
+  - Refactored database transaction definitions to improve flexibility and maintainability.
+
+- **Result and Failure:**
+  - Made cosmetic changes to the `Result` and `Failure` classes for improved clarity and usability in handling application errors and outcomes.
+
 **Future Expansions:**
 - Following the initial releases, we plan to extend support to additional frameworks and platforms such as:
   - **NestJS**: Dedicated package integration.
   - **AWS**: Solutions tailored for Amazon Web Services.
-  - **WebSockets**: Dedicated package for the `ws` WebSocket integration.
-  - **Events**: Dedicated package for messaging integration.
   - And more based on community feedback and demand.
 
 We value community input and encourage users to provide feedback and contribute to the development process. Stay tuned for more updates and please consider the current stage of development when using the packages in production environments.
@@ -204,9 +225,9 @@ export class ProcessOrderUseCase implements Soap.UseCase<OrderConfirmation>{
 }
 ```
 
-### Repository and RepositoryImpl
+### Repository and BaseRepository
 
-Repositories are components that perform operations on databases. They typically use one data context (i.e., database client or specific table), mapper, and query builder. Repositories should handle all data-related logic but not business logic (exceptions may include decisions like caching data). `RepositoryImpl` contains basic implementations and is tailored to using a single data context. If you need custom (dedicated) methods, parameters, or want to use multiple contexts, such as for aggregation, you should write your own implementation, perhaps by extending `RepositoryImpl`. Below are examples of setting up a repository and creating custom ones.
+Repositories are components that perform operations on databases. They typically use one data context (i.e., database client or specific table), mapper, and query builder. Repositories should handle all data-related logic but not business logic (exceptions may include decisions like caching data). `BaseRepository` contains basic implementations and is tailored to using a single data context. If you need custom (dedicated) methods, parameters, or want to use multiple contexts, such as for aggregation, you should write your own implementation, perhaps by extending `BaseRepository`. Below are examples of setting up a repository and creating custom ones.
 
 ```typescript
 // Example repository abstract class (or interface)
@@ -216,7 +237,7 @@ export abstract class CustomerRepository extends Soap.Repository<Customer> {
 }
 
 // Example custom repository implementation
-export class CustomerRepositoryImpl extends Soap.RepositoryImpl<Customer, CustomerMongoModel> implements CustomerRepository {
+export class CustomerRepositoryImpl extends Soap.BaseRepository<Customer, CustomerMongoModel> implements CustomerRepository {
   constructor(
     context: Soap.DatabaseContext<Customer, CustomerMongoModel>,
     // feel free to add more contexts if you need
@@ -250,7 +271,7 @@ export class Dependencies implements Soap.Dependencies {
     // This repository implementation will handle all data operations for 'Customer' entities.
     const impl = new CustomerRepositoryImpl(context);
     // Alternatively, if using a generic repository pattern:
-    // const impl = new RepositoryImpl(context)
+    // const impl = new BaseRepository(context)
 
     // Binds the 'CustomerRepositoryImpl' instance to the 'CustomerRepository' token in the IoC container.
     // This makes 'CustomerRepositoryImpl' available for injection throughout the application.
@@ -274,7 +295,7 @@ export class CustomerMongoSource extends MongoSource<CustomerMongoModel> {
 ```
 
 ### Mapper
-This component is used to map entities to models and vice versa, similar to `RouteIO`. Mappers should handle a single type of document, so you should create mappers per collection and repository. You don't necessarily need to use the mapper in your code if you're using existing implementations. `RepositoryImpl` handles this before and after executing commands on the collection, depending on the type of operation.
+This component is used to map entities to models and vice versa, similar to `RouteIO`. Mappers should handle a single type of document, so you should create mappers per collection and repository. You don't necessarily need to use the mapper in your code if you're using existing implementations. `BaseRepository` handles this before and after executing commands on the collection, depending on the type of operation.
 
 ```typescript
 export class CustomerMongoMapper extends MongoMapper<Customer, CustomerMongoModel> {
@@ -366,6 +387,12 @@ The decorators **`@Injectable`** and **`@Inject`** provide a simple, framework-a
 
 [Click here for details](DI.md)
 
+### Using Sockets
+
+Sockets provide a persistent, full-duplex communication channel over a single TCP connection. Unlike HTTP, which operates in a request-response model, Sockets enable real-time interaction between a client and a server, making them an excellent choice for applications requiring low-latency communication.
+
+[Click here for details](SOCKET.md)
+
 ### Service and Toolset
 Services are used to communicate with other APIs or any other external data sources (not databases; that's what repositories and collections are for). Toolsets, on the other hand, are categorized sets of tools. Instead of having a general `Utils` or manager, it's a component where you can place any methods that don't fit into other patterns. They can be static or instantiated, and you can obtain them via a container.
 
@@ -403,6 +430,12 @@ export class DateToolset {
   }
 }
 ```
+
+### Using EventBus
+
+The `EventProcessor` and `EventBus` provides a flexible and scalable solution for managing events in distributed systems. With built-in support for retry policies, error handling, message parsing, and validation, the framework is designed to work seamlessly with various messaging systems like RabbitMQ, Kafka or AWS SQS.
+
+[Click here for details](EVENT-BUS.md)
 
 ## Feeling overwhelmed?
 

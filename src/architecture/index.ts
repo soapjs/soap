@@ -3,7 +3,7 @@ export * from "./data/repository-data-contexts";
 export * from "./data/collection.errors";
 export * from "./data/mapper";
 export * from "./data/query-factory";
-export * from "./data/repository-impl";
+export * from "./data/base-repository";
 export * from "./domain/transaction";
 export * from "./domain/transaction-runner";
 export * from "./domain/transaction-scope";
