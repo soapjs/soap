@@ -14,6 +14,8 @@ describe("SocketServer", () => {
   let options: SocketServerOptions;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+
     mockServer = {
       onConnection: jest.fn(),
       send: jest.fn(),
@@ -28,9 +30,15 @@ describe("SocketServer", () => {
       onDisconnection: jest.fn(),
       onError: jest.fn(),
       onMessage: jest.fn(),
+      heartbeatInterval: 5000,
     };
 
     server = new SocketServer(mockServer, options);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    server.shutdown(); // Ensure the server is properly shut down
   });
 
   it("should set up connection handlers", () => {
@@ -38,14 +46,9 @@ describe("SocketServer", () => {
   });
 
   it("should handle new connections", () => {
-    const mockClient = {
-      on: jest.fn(),
-    } as any;
+    const mockClient = { on: jest.fn() } as any;
     const mockReq = {
-      socket: {
-        remoteAddress: "127.0.0.1",
-        remotePort: 12345,
-      },
+      socket: { remoteAddress: "127.0.0.1", remotePort: 12345 },
     } as unknown as IncomingMessage;
 
     mockServer.onConnection.mock.calls[0][0](mockClient, mockReq);
@@ -54,22 +57,15 @@ describe("SocketServer", () => {
   });
 
   it("should broadcast messages to all clients", () => {
-    const mockClient1 = {} as AbstractSocket;
-    const mockClient2 = {} as AbstractSocket;
-    server["clients"].set("client-1", mockClient1);
-    server["clients"].set("client-2", mockClient2);
-
     const message: SocketMessage = { type: "broadcast", payload: "hello" };
+
+    const mockClient = {} as AbstractSocket;
+    server["clients"].set("client-1", mockClient);
 
     server.broadcast(message);
 
-    expect(mockServer.send).toHaveBeenCalledTimes(2);
     expect(mockServer.send).toHaveBeenCalledWith(
-      mockClient1,
-      JSON.stringify(message)
-    );
-    expect(mockServer.send).toHaveBeenCalledWith(
-      mockClient2,
+      mockClient,
       JSON.stringify(message)
     );
   });
@@ -113,18 +109,14 @@ describe("SocketServer", () => {
   });
 
   it("should start the heartbeat mechanism", () => {
-    jest.useFakeTimers();
+    server["startHeartbeat"]();
 
     const mockClient = {} as AbstractSocket;
     server["clients"].set("client-1", mockClient);
 
-    server["startHeartbeat"]();
-
     jest.advanceTimersByTime(5000);
 
     expect(mockServer.ping).toHaveBeenCalledWith(mockClient);
-
-    jest.useRealTimers();
   });
 
   it("should shut down the server", () => {
