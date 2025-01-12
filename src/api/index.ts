@@ -6,5 +6,4 @@ export * from "./route.types";
 export * from "./route";
 export * from "./router";
 export * from "./route-io";
-export * from "./auth";
 export * from "./validation";
