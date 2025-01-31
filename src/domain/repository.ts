@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { QueryBuilder } from "./query-builder";
-import { Result } from "./result";
+import { Result } from "../common/result";
 import { RemoveStats, UpdateStats } from "./types";
 import { Mapper } from "../data/mapper";
 import {

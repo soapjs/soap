@@ -7,7 +7,7 @@ describe("MiddlewareRegistry", () => {
 
   beforeEach(() => {
     logger = { warn: jest.fn() };
-    registry = new MiddlewareRegistry(logger as any);
+    registry = new MiddlewareRegistry();
   });
 
   it("should add middleware to the registry", () => {
@@ -18,23 +18,7 @@ describe("MiddlewareRegistry", () => {
     };
     registry.add(middleware);
 
-    expect(logger.warn).not.toHaveBeenCalled();
     expect(registry["list"].has(MiddlewareType.Security)).toBe(true);
-  });
-
-  it("should warn if middleware with the same name is added", () => {
-    const middleware: Middleware = {
-      name: MiddlewareType.Security,
-      isDynamic: true,
-      use: jest.fn(),
-    };
-    registry.add(middleware);
-    registry.add(middleware);
-
-    expect(logger.warn).toHaveBeenCalledTimes(1);
-    expect(logger.warn).toHaveBeenCalledWith(
-      "[Override Warning] Middleware named security found"
-    );
   });
 
   it("should initialize middleware if not ready", () => {

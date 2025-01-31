@@ -1,5 +1,5 @@
 /* istanbul ignore file */
-import { Result } from "./result";
+import { Result } from "../common/result";
 
 /**
  * Represents an UseCase interface.

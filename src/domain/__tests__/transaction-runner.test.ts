@@ -3,7 +3,7 @@ import { TransactionScope } from "../transaction-scope";
 import { TransactionRunner } from "../transaction-runner";
 import { Transaction } from "../transaction";
 import { DatabaseSession } from "../../data/database-session";
-import { Result } from "../result";
+import { Result } from "../../common/result";
 import { AnyObject } from "../types";
 
 class TestDatabaseSession implements DatabaseSession {

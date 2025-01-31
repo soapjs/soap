@@ -1,7 +1,7 @@
-import { Failure } from "../domain/failure";
+import { Failure } from "../common/failure";
 import { QueryBuilder } from "../domain/query-builder";
 import { Repository } from "../domain/repository";
-import { Result } from "../domain/result";
+import { Result } from "../common/result";
 import { Mapper } from "./mapper";
 import { UpdateStats, RemoveStats, Query } from "../domain/types";
 import {

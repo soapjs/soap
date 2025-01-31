@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Result } from "./result";
+import { Result } from "../common/result";
 import { Transaction } from "./transaction";
 
 export class AutoTransaction<T> extends Transaction<T> {

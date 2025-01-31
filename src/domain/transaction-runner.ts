@@ -1,4 +1,4 @@
-import { Result } from "./result";
+import { Result } from "../common/result";
 import { DatabaseSession } from "../data/database-session";
 import { Transaction } from "./transaction";
 import { TransactionScope } from "./transaction-scope";

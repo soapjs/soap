@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Result } from "./result";
+import { Result } from "../common/result";
 import { DatabaseContext } from "../data/repository-data-contexts";
 import { isRepository } from "../data/base-repository";
 import { DatabaseSession } from "../data/database-session";

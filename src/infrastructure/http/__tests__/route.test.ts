@@ -1,4 +1,4 @@
-import { Result } from "../../architecture";
+import { Result } from "../../../common";
 import {
   Route,
   GetRoute,

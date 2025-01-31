@@ -1,4 +1,4 @@
-import { Container } from "../../common/container";
+import { Container } from "../container";
 
 describe("Container", () => {
   let container: Container;

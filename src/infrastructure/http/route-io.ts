@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Result } from "../architecture";
+import { HandlerResult } from "./types";
 
 /**
  * RouteIO interface that defines methods for converting between request and response types.
@@ -19,9 +19,9 @@ export interface RouteIO<
    * Converts the result into a response and sends it to the user.
    * Failure to send a response may result in a hanging request without a response.
    * @param {ResponseType} response - The response object to be populated and sent.
-   * @param {Result<O>} [result] - The result data to be sent in the response (optional).
+   * @param {HandlerResult<O>} [result] - The result data to be sent in the response (optional).
    */
-  toResponse?(response: ResponseType, result?: Result<O>): void;
+  toResponse?(response: ResponseType, result?: HandlerResult<O>): void;
 
   /**
    * Extracts data from the request.

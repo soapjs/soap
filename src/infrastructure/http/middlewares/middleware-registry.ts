@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { Logger } from "../common";
-import { AnyFunction } from "./route.types";
+import { MiddlewareFunction } from "../types";
 import { Middleware } from "./middleware";
 
 /**
@@ -26,29 +25,29 @@ export enum MiddlewareType {
  * Middleware registry for managing middleware instances.
  */
 export class MiddlewareRegistry {
-  private list: Map<string, { middleware: Middleware; ready: boolean }> =
-    new Map();
-
-  /**
-   * Creates an instance of MiddlewareRegistry.
-   * @param {Logger} logger - Logger instance for logging messages.
-   */
-  constructor(private logger: Logger) {}
+  private list: Map<
+    string,
+    { middleware: Middleware | MiddlewareFunction; ready: boolean }
+  > = new Map();
 
   /**
    * Adds a middleware to the registry.
-   * @param {Middleware} middleware - The middleware instance(s).
+   * @param {Middleware | MiddlewareFunction} middleware - The middleware instance(s).
    * @param {boolean} ready - Specifies whether the middleware is already initialized.
    */
-  protected addSingleMiddleware(middleware: Middleware, ready?: boolean) {
-    if (this.list.has(middleware.name)) {
-      this.logger.warn(
-        `[Override Warning] Middleware named ${middleware.name} found`
-      );
-    }
-    this.list.set(middleware.name, {
+  protected addSingleMiddleware(
+    middleware: Middleware | MiddlewareFunction,
+    ready?: boolean
+  ) {
+    const name = this.isMiddlewareFunction(middleware)
+      ? middleware.name || "anonymousMiddleware"
+      : middleware.name;
+
+    this.list.set(name, {
       middleware,
-      ready: ready || middleware.isDynamic,
+      ready: this.isMiddlewareFunction(middleware)
+        ? true
+        : ready || middleware.isDynamic,
     });
   }
 
@@ -59,9 +58,15 @@ export class MiddlewareRegistry {
    */
   add(middleware: Middleware | Middleware[], ready?: boolean): void {
     if (Array.isArray(middleware)) {
-      middleware.forEach((m) => this.addSingleMiddleware(m, ready));
+      middleware.forEach((m) => {
+        if (m) {
+          this.addSingleMiddleware(m, ready);
+        }
+      });
     } else {
-      this.addSingleMiddleware(middleware, ready);
+      if (middleware) {
+        this.addSingleMiddleware(middleware, ready);
+      }
     }
   }
 
@@ -72,7 +77,9 @@ export class MiddlewareRegistry {
    */
   init(name: string, ...args: unknown[]): void {
     const entry = this.list.get(name);
-    if (entry && !entry.ready && entry.middleware.init) {
+    if (typeof entry.middleware === "function") {
+      entry.ready = true;
+    } else if (!entry.ready && entry.middleware.init) {
       entry.middleware.init(...args);
       entry.ready = true;
     }
@@ -82,14 +89,18 @@ export class MiddlewareRegistry {
    * Uses a middleware function, ensuring it is ready before use.
    * @param {string} name - The name or type of the middleware.
    * @param {...unknown[]} args - The arguments required to apply the middleware.
-   * @returns {AnyFunction} - The result of the middleware's use function.
+   * @returns {MiddlewareFunction} - The result of the middleware's use function.
    * @throws {Error} - If the middleware is not found or not ready.
    */
-  use(name: string, ...args: unknown[]): AnyFunction {
+  use(name: string, ...args: unknown[]): MiddlewareFunction {
     const entry = this.list.get(name);
 
     if (!entry) {
       throw new Error(`Middleware ${name} not found`);
+    }
+
+    if (this.isMiddlewareFunction(entry.middleware)) {
+      return entry.middleware(...args);
     }
 
     if (!entry.ready) {
@@ -105,11 +116,18 @@ export class MiddlewareRegistry {
    * @param {boolean} onlyReady - Return middleware only if it is ready.
    * @returns {Middleware}
    */
-  get(name: string, onlyReady = false): Middleware {
+  get(name: string, onlyReady = false): Middleware | MiddlewareFunction {
     const entry = this.list.get(name);
-    if (entry?.middleware && ((onlyReady && entry?.ready) || !onlyReady)) {
+
+    if (
+      this.isMiddlewareFunction(entry?.middleware) ||
+      (this.isMiddlewareObject(entry?.middleware) &&
+        ((onlyReady && entry?.ready) || !onlyReady))
+    ) {
       return entry.middleware;
     }
+
+    return null;
   }
 
   /**
@@ -120,7 +138,12 @@ export class MiddlewareRegistry {
    */
   has(name: string, onlyReady = false): boolean {
     const entry = this.list.get(name);
-    if (entry?.middleware && ((onlyReady && entry?.ready) || !onlyReady)) {
+
+    if (
+      this.isMiddlewareFunction(entry?.middleware) ||
+      (this.isMiddlewareObject(entry?.middleware) &&
+        ((onlyReady && entry?.ready) || !onlyReady))
+    ) {
       return true;
     }
 
@@ -134,6 +157,25 @@ export class MiddlewareRegistry {
    */
   isReady(name: string): boolean {
     const entry = this.list.get(name);
-    return entry && entry.ready;
+    return this.isMiddlewareFunction(entry?.middleware)
+      ? true
+      : Boolean(entry?.ready);
+  }
+
+  protected isMiddlewareFunction(
+    middleware: Middleware | MiddlewareFunction
+  ): middleware is MiddlewareFunction {
+    return typeof middleware === "function";
+  }
+
+  protected isMiddlewareObject(
+    middleware: Middleware | MiddlewareFunction
+  ): middleware is Middleware {
+    return (
+      typeof middleware === "object" &&
+      middleware !== null &&
+      "use" in middleware &&
+      typeof middleware.use === "function"
+    );
   }
 }

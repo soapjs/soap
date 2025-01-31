@@ -31,4 +31,9 @@ export interface Middleware {
    * @returns {any} - Can return any type based on the middleware implementation.
    */
   use?(...args: any[]): any;
+
+  /**
+   * Optional cleanup function when middleware is removed.
+   */
+  destroy?(): Promise<void> | void;
 }

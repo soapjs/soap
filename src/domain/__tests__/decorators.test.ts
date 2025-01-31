@@ -8,12 +8,11 @@ import {
   INJECTABLE_METADATA_KEY,
   isInjectable,
   IsTransaction,
-  Transactional,
   UseSession,
 } from "../decorators";
 
 import { TransactionRunner } from "../transaction-runner";
-import { Result } from "../result";
+import { Result } from "../../common/result";
 import { AutoTransaction } from "../auto-transaction";
 import { Transaction } from "../transaction";
 

@@ -1,23 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Middleware } from "../middleware";
-
-/**
- * Represents options for validation middleware.
- */
-export type RouteValidationOptions = {
-  /**
-   * The name of the validator to be used.
-   */
-  validator: string;
-  /**
-   * The schema for validation.
-   */
-  schema: any;
-  /**
-   *
-   */
-  [key: string]: unknown;
-};
+import { RouteValidationOptions } from "../types";
+import { Middleware } from "./middleware";
 
 /**
  * Represents the result of a validation operation.
