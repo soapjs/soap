@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { RouteValidationOptions } from "../types";
+import { RouteValidationOptions } from "./types";
 import { Middleware } from "./middleware";
 
 /**

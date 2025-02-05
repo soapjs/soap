@@ -29,6 +29,11 @@ export interface Router {
   setupRoutes(...args: unknown[]): void;
 
   /**
+   * Reloads all routes, clearing cache and reloading dynamically.
+   */
+  reloadRoutes(...args: unknown[]): Promise<void>;
+
+  /**
    * Mounts a route or a set of routes.
    * @param data Route or set of routes to mount.
    */

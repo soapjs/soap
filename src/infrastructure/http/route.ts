@@ -1,3 +1,4 @@
+import { RouteIO } from "./route.io";
 import { AnyHandler, RouteAdditionalOptions, RequestMethod } from "./types";
 
 /**
@@ -18,12 +19,14 @@ export class Route {
    * @param {string | string[]} path - The path or paths of the route.
    * @param {AnyHandler} handler - The handler function for the route.
    * @param {RouteAdditionalOptions} [options] - Optional route configuration options.
+   * @param {RouteIO} [io] - Optional route input & output mappers.
    */
   constructor(
     public readonly method: RequestMethod | RequestMethod[],
     public readonly path: string | string[],
     public readonly handler: AnyHandler,
-    public readonly options?: RouteAdditionalOptions
+    public readonly options?: RouteAdditionalOptions,
+    public readonly io?: RouteIO
   ) {}
 }
 

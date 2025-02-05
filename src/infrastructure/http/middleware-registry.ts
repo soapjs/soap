@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { MiddlewareFunction } from "../types";
+import { MiddlewareFunction } from "./types";
 import { Middleware } from "./middleware";
 
 /**

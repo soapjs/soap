@@ -11,7 +11,17 @@ export type RouteConfig = {
   /**
    * The HTTP method for the route.
    */
-  method: "PUT" | "POST" | "GET" | "DELETE" | "PATCH" | "CONNECT" | "HEAD" | "OPTIONS" | "TRACE" | "ALL";
+  method:
+    | "PUT"
+    | "POST"
+    | "GET"
+    | "DELETE"
+    | "PATCH"
+    | "CONNECT"
+    | "HEAD"
+    | "OPTIONS"
+    | "TRACE"
+    | "ALL";
 } & RouteAdditionalOptions;
 
 export type RouteAdditionalOptions = {
@@ -136,7 +146,7 @@ export type RouteAdditionalOptions = {
     /**
      * If set to `true`, only the owner of the resource can access it.
      */
-    selfOnly?: boolean;
+    selfOnly?: boolean | AnyHandler;
   };
 
   /**
