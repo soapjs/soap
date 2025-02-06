@@ -1,6 +1,6 @@
 {
   "name": "@soapjs/soap",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Lightweight, clean architecture-based framework designed to streamline the development of modular and maintainable web applications",
   "homepage": "https://docs.soapjs.com",
   "repository": "https://github.com/soapjs/soap",
