@@ -1,67 +1,68 @@
 import { DependencyRegistry } from "../dependency-registry";
 
 describe("DependencyRegistry", () => {
+  const registry = new DependencyRegistry();
   beforeEach(() => {
-    (DependencyRegistry as any).dependencies.clear();
+    (registry as any).dependencies.clear();
   });
 
   it("should register a dependency without initialization", () => {
-    DependencyRegistry.register("TestService");
+    registry.register("TestService");
 
-    expect(DependencyRegistry.get("TestService")).toBeNull();
-    expect(DependencyRegistry.isReady("TestService")).toBe(false);
+    expect(registry.get("TestService")).toBeNull();
+    expect(registry.isReady("TestService")).toBe(false);
   });
 
   it("should register a dependency with async initialization", async () => {
     const mockInstance = { foo: "bar" };
 
-    DependencyRegistry.register("AsyncService", async () => mockInstance);
-    await DependencyRegistry.initializeAll();
+    registry.register("AsyncService", async () => mockInstance);
+    await registry.initializeAll();
 
-    expect(DependencyRegistry.get("AsyncService")).toBe(mockInstance);
-    expect(DependencyRegistry.isReady("AsyncService")).toBe(true);
+    expect(registry.get("AsyncService")).toBe(mockInstance);
+    expect(registry.isReady("AsyncService")).toBe(true);
   });
 
   it("should initialize multiple dependencies", async () => {
     const mockDB = { connected: true };
     const mockCache = { store: "memory" };
 
-    DependencyRegistry.register("Database", async () => mockDB);
-    DependencyRegistry.register("Cache", async () => mockCache);
+    registry.register("Database", async () => mockDB);
+    registry.register("Cache", async () => mockCache);
 
-    await DependencyRegistry.initializeAll();
+    await registry.initializeAll();
 
-    expect(DependencyRegistry.get("Database")).toBe(mockDB);
-    expect(DependencyRegistry.get("Cache")).toBe(mockCache);
-    expect(DependencyRegistry.isReady("Database")).toBe(true);
-    expect(DependencyRegistry.isReady("Cache")).toBe(true);
+    expect(registry.get("Database")).toBe(mockDB);
+    expect(registry.get("Cache")).toBe(mockCache);
+    expect(registry.isReady("Database")).toBe(true);
+    expect(registry.isReady("Cache")).toBe(true);
   });
 
   it("should handle initialization failures gracefully", async () => {
-    DependencyRegistry.register("FailingService", async () => {
+    registry.register("FailingService", async () => {
       throw new Error("Initialization error");
     });
 
-    await expect(DependencyRegistry.initializeAll()).resolves.not.toThrow();
+    await expect(registry.initializeAll()).resolves.not.toThrow();
 
-    expect(DependencyRegistry.get("FailingService")).toBeNull();
-    expect(DependencyRegistry.isReady("FailingService")).toBe(false);
+    expect(registry.get("FailingService")).toBeNull();
+    expect(registry.isReady("FailingService")).toBe(false);
   });
 
   it("should return false for unregistered dependencies", () => {
-    expect(DependencyRegistry.isReady("UnknownService")).toBe(false);
-    expect(DependencyRegistry.get("UnknownService")).toBeNull();
+    expect(registry.isReady("UnknownService")).toBe(false);
+    expect(registry.get("UnknownService")).toBeNull();
   });
 
   it("should not override an initialized dependency with null", async () => {
     const mockInstance = { value: 42 };
 
-    DependencyRegistry.register("ImmutableService", async () => mockInstance);
-    await DependencyRegistry.initializeAll();
+    registry.register("ImmutableService", async () => mockInstance);
+    await registry.initializeAll();
 
-    DependencyRegistry.register("ImmutableService");
+    registry.register("ImmutableService");
 
-    expect(DependencyRegistry.get("ImmutableService")).toBe(mockInstance);
-    expect(DependencyRegistry.isReady("ImmutableService")).toBe(true);
+    expect(registry.get("ImmutableService")).toBe(mockInstance);
+    expect(registry.isReady("ImmutableService")).toBe(true);
   });
 });

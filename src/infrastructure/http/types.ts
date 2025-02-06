@@ -75,6 +75,8 @@ export type RouteAdditionalOptions = {
      * The cache storage type.
      */
     store?: "memory" | "db" | "file";
+
+    [key: string]: any;
   };
 
   /**
@@ -90,6 +92,8 @@ export type RouteAdditionalOptions = {
      * A list of headers to exclude from logs.
      */
     excludeHeaders?: string[];
+
+    [key: string]: any;
   };
 
   /**
@@ -105,6 +109,8 @@ export type RouteAdditionalOptions = {
      * A list of routes to exclude from tracking.
      */
     excludeRoutes?: string[];
+
+    [key: string]: any;
   };
 
   /**
@@ -120,6 +126,8 @@ export type RouteAdditionalOptions = {
      * Fields to redact in the logs (e.g., passwords).
      */
     redactFields?: string[];
+
+    [key: string]: any;
   };
 
   /**
@@ -147,6 +155,8 @@ export type RouteAdditionalOptions = {
      * If set to `true`, only the owner of the resource can access it.
      */
     selfOnly?: boolean | AnyHandler;
+
+    [key: string]: any;
   };
 
   /**
@@ -162,7 +172,16 @@ export type RouteAdditionalOptions = {
      * Middleware functions to execute after the main handler.
      */
     post?: MiddlewareFunction[];
+
+    [key: string]: any;
   };
+
+  /**
+   * Response compression options.
+   */
+  compression?: RouteCompressionOptions;
+
+  [key: string]: unknown;
 };
 
 /**

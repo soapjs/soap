@@ -2,6 +2,7 @@
 
 import { MiddlewareFunction } from "./types";
 import { Middleware } from "./middleware";
+import { MiddlewareTools } from "./middleware.tools";
 
 /**
  * Enum representing different types of middleware.
@@ -39,13 +40,13 @@ export class MiddlewareRegistry {
     middleware: Middleware | MiddlewareFunction,
     ready?: boolean
   ) {
-    const name = this.isMiddlewareFunction(middleware)
+    const name = MiddlewareTools.isMiddlewareFunction(middleware)
       ? middleware.name || "anonymousMiddleware"
       : middleware.name;
 
     this.list.set(name, {
       middleware,
-      ready: this.isMiddlewareFunction(middleware)
+      ready: MiddlewareTools.isMiddlewareFunction(middleware)
         ? true
         : ready || middleware.isDynamic,
     });
@@ -99,7 +100,7 @@ export class MiddlewareRegistry {
       throw new Error(`Middleware ${name} not found`);
     }
 
-    if (this.isMiddlewareFunction(entry.middleware)) {
+    if (MiddlewareTools.isMiddlewareFunction(entry.middleware)) {
       return entry.middleware(...args);
     }
 
@@ -120,8 +121,8 @@ export class MiddlewareRegistry {
     const entry = this.list.get(name);
 
     if (
-      this.isMiddlewareFunction(entry?.middleware) ||
-      (this.isMiddlewareObject(entry?.middleware) &&
+      MiddlewareTools.isMiddlewareFunction(entry?.middleware) ||
+      (MiddlewareTools.isMiddlewareObject(entry?.middleware) &&
         ((onlyReady && entry?.ready) || !onlyReady))
     ) {
       return entry.middleware;
@@ -140,8 +141,8 @@ export class MiddlewareRegistry {
     const entry = this.list.get(name);
 
     if (
-      this.isMiddlewareFunction(entry?.middleware) ||
-      (this.isMiddlewareObject(entry?.middleware) &&
+      MiddlewareTools.isMiddlewareFunction(entry?.middleware) ||
+      (MiddlewareTools.isMiddlewareObject(entry?.middleware) &&
         ((onlyReady && entry?.ready) || !onlyReady))
     ) {
       return true;
@@ -157,25 +158,8 @@ export class MiddlewareRegistry {
    */
   isReady(name: string): boolean {
     const entry = this.list.get(name);
-    return this.isMiddlewareFunction(entry?.middleware)
+    return MiddlewareTools.isMiddlewareFunction(entry?.middleware)
       ? true
       : Boolean(entry?.ready);
-  }
-
-  protected isMiddlewareFunction(
-    middleware: Middleware | MiddlewareFunction
-  ): middleware is MiddlewareFunction {
-    return typeof middleware === "function";
-  }
-
-  protected isMiddlewareObject(
-    middleware: Middleware | MiddlewareFunction
-  ): middleware is Middleware {
-    return (
-      typeof middleware === "object" &&
-      middleware !== null &&
-      "use" in middleware &&
-      typeof middleware.use === "function"
-    );
   }
 }

@@ -10,8 +10,8 @@ import { RequestMethod } from "./types";
  * enabling developers to structure their API endpoints logically.
  */
 export class RouteRegistry {
-  private static groups = new Map<string, RouteGroup>();
-  private static routes = new Map<string, Map<string, Route>>();
+  private groups = new Map<string, RouteGroup>();
+  private routes = new Map<string, Map<string, Route>>();
 
   /**
    * Registers a route group in the registry.
@@ -19,7 +19,7 @@ export class RouteRegistry {
    *
    * @param {RouteGroup} group - The route group to be registered.
    */
-  private static registerGroup(group: RouteGroup): void {
+  private registerGroup(group: RouteGroup): void {
     this.groups.set(group.path, group);
     group.routes.forEach((route) => {
       this.registerRoute(route);
@@ -31,7 +31,7 @@ export class RouteRegistry {
    *
    * @param {Route} route - The route to be registered.
    */
-  private static registerRoute(route: Route): void {
+  private registerRoute(route: Route): void {
     if (Array.isArray(route.path)) {
       route.path.forEach((path) => {
         const routeByMetod = this.routes.get(path);
@@ -65,7 +65,7 @@ export class RouteRegistry {
    *
    * @param {Route | RouteGroup} item - The route or route group to register.
    */
-  public static register(item: Route | RouteGroup): void {
+  public register(item: Route | RouteGroup): void {
     if (item instanceof RouteGroup) {
       this.registerGroup(item);
     } else {
@@ -78,7 +78,7 @@ export class RouteRegistry {
    *
    * @returns {RouteGroup[]} An array of all registered route groups.
    */
-  public static getAllGroups(): RouteGroup[] {
+  public getAllGroups(): RouteGroup[] {
     return Array.from(this.groups.values());
   }
 
@@ -87,7 +87,7 @@ export class RouteRegistry {
    *
    * @returns {Route[]} An array of all registered routes.
    */
-  public static getAllRoutes(): Route[] {
+  public getAllRoutes(): Route[] {
     const routes: Route[] = [];
     this.routes.forEach((map) => {
       routes.push(...map.values());
@@ -102,7 +102,7 @@ export class RouteRegistry {
    * @param {string} path - The path of the route group.
    * @returns {RouteGroup | undefined} The matching route group or `undefined` if not found.
    */
-  public static getGroup(path: string): RouteGroup | undefined {
+  public getGroup(path: string): RouteGroup | undefined {
     return this.groups.get(path);
   }
 
@@ -113,7 +113,7 @@ export class RouteRegistry {
    * @param {string} path - The path of the route.
    * @returns {Route | undefined} The matching route or `undefined` if not found.
    */
-  public static getRoute(
+  public getRoute(
     method: RequestMethod | RequestMethod[],
     path: string
   ): Route | undefined {
@@ -124,7 +124,7 @@ export class RouteRegistry {
    * Clears all registered routes and groups.
    * Useful for dynamic reloading or resetting the registry.
    */
-  public static clear(): void {
+  public clear(): void {
     this.routes.clear();
     this.groups.clear();
   }
