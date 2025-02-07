@@ -1,6 +1,7 @@
 export * from "./errors";
 export * from "./middleware";
 export * from "./middleware.registry";
+export * from "./middleware.tools";
 export * from "./validation.middleware";
 export * from "./route";
 export * from "./route.io";
