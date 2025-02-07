@@ -261,13 +261,21 @@ export type RouteRateLimitOptions = {
 /**
  * Validation options for request payloads.
  */
-export type RouteValidationOptions = {
+export type ValidationOptions = {
   /**
    * The name of the validator to be used.
    */
-  validator: string;
+  validator?: string;
   schema?: any;
   [key: string]: any;
+};
+
+/**
+ * Route validation options.
+ */
+export type RouteValidationOptions = {
+  request?: ValidationOptions;
+  response?: ValidationOptions;
 };
 
 /**

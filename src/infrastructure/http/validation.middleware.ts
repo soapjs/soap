@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { RouteValidationOptions } from "./types";
+import { ValidationOptions } from "./types";
 import { Middleware } from "./middleware";
 
 /**
@@ -30,8 +30,8 @@ export type ValidationResult = {
 export interface ValidationMiddleware extends Middleware {
   /**
    * Validates a request.
-   * @param {RouteValidationOptions} options Additional options for validation.
+   * @param {ValidationOptions} options Additional options for validation.
    * @returns The validation result.
    */
-  use(options: RouteValidationOptions): any;
+  use(options: ValidationOptions): any;
 }
