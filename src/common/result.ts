@@ -30,14 +30,14 @@ export class Result<ContentType = void> {
   /**
    * @returns {boolean}
    */
-  public isFailure(): this is Result<ContentType> & { failure: undefined } {
+  public isFailure(): this is Result<ContentType> & { failure: Failure } {
     return this.failure instanceof Failure;
   }
 
   /**
    * @returns {boolean}
    */
-  public isSuccess(): this is Result<ContentType> & { failure: Failure } {
+  public isSuccess(): this is Result<ContentType> & { failure: undefined } {
     return !this.failure;
   }
 
