@@ -8,7 +8,7 @@ import { Failure } from "./failure";
  */
 export class Result<ContentType = void> {
   public readonly content: ContentType;
-  public readonly failure: Failure;
+  public readonly failure: Failure | undefined;
 
   /**
    * Create instances of the class Result
@@ -19,12 +19,12 @@ export class Result<ContentType = void> {
    */
   private constructor(data?: { content?: ContentType; failure?: Failure }) {
     const { content, failure } = data || {};
-    if (content) {
+    if (content !== undefined) {
       this.content = content;
+    } else {
+      this.content = undefined as ContentType;
     }
-    if (failure) {
-      this.failure = failure;
-    }
+    this.failure = failure;
   }
 
   /**
