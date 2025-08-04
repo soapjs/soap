@@ -12,3 +12,4 @@ export * from "./query-builder";
 export * from "./where";
 export * from "./id-type";
 export * from "./decorators";
+export * from "./value-object";

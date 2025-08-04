@@ -1,6 +1,6 @@
 import { DatabaseContext } from "../repository-data-contexts";
 import { Source } from "../source";
-import { QueryFactory } from "../query-factory";
+import { DbQueryFactory } from "../db-query-factory";
 import { FindParams } from "../../domain/params";
 import { Result } from "../../common/result";
 import { Failure } from "../../common/failure";

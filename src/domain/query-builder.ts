@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Query, AnyObject } from "./types";
+import { DbQuery, AnyObject } from "./types";
 
 /**
  * A class representing a query builder.
  * @template QueryType - The type of query.
  */
-export class QueryBuilder<QueryType = Query> {
+export class QueryBuilder<QueryType = DbQuery> {
   /**
    * Checks if an object conforms to the QueryBuilder structure.
    * @param {any} obj - The object to check.

@@ -6,14 +6,14 @@ import {
   RemoveParams,
   UpdateMethod,
 } from "../domain/params";
-import { Query } from "../domain/types";
+import { DbQuery } from "../domain/types";
 import { Where } from "../domain/where";
 
 /**
  * @class
  * Represents a collection of query builders for different types of operations.
  */
-export interface QueryFactory {
+export interface DbQueryFactory {
   /**
    * Builds a query for find operations.
    *
@@ -21,7 +21,7 @@ export interface QueryFactory {
    *
    * @returns {Query} The query for the find operation.
    */
-  createFindQuery(params: FindParams, ...args: any[]): Query;
+  createFindQuery(params: FindParams, ...args: any[]): DbQuery;
 
   /**
    * Builds a query for count operations.
@@ -30,7 +30,7 @@ export interface QueryFactory {
    *
    * @returns {Query} The query for the count operation.
    */
-  createCountQuery(params: CountParams, ...args: any[]): Query;
+  createCountQuery(params: CountParams, ...args: any[]): DbQuery;
 
   /**
    * Builds a query for update operations.
@@ -47,7 +47,7 @@ export interface QueryFactory {
     where: Where[],
     methods: UpdateMethod[],
     ...args: any[]
-  ): Query;
+  ): DbQuery;
 
   /**
    * Builds a query for remove operations.
@@ -59,7 +59,7 @@ export interface QueryFactory {
   createRemoveQuery(
     params: RemoveParams,
     ...args: any[]
-  ): Query;
+  ): DbQuery;
 
   /**
    * Builds a query for aggregation operations.
@@ -71,5 +71,5 @@ export interface QueryFactory {
   createAggregationQuery(
     params: AggregationParams,
     ...args: any[]
-  ): Query;
+  ): DbQuery;
 }

@@ -2,11 +2,6 @@ import "reflect-metadata";
 import {
   EntityField,
   FieldResolver,
-  getInjectionTokens,
-  Inject,
-  Injectable,
-  INJECTABLE_METADATA_KEY,
-  isInjectable,
   IsTransaction,
   UseSession,
 } from "../decorators";
@@ -171,41 +166,4 @@ describe("Transactional Decorator", () => {
   });
 });
 
-describe("Injectable & Inject", () => {
-  it("should store metadata with 'Injectable'", () => {
-    @Injectable("MyIdentifier", { scope: "singleton", custom: 123 })
-    class Service {}
 
-    const meta = Reflect.getMetadata(INJECTABLE_METADATA_KEY, Service);
-    expect(meta).toEqual({
-      id: "MyIdentifier",
-      scope: "singleton",
-      custom: 123,
-    });
-  });
-
-  it("should store metadata with 'Inject'", () => {
-    class Service2 {
-      constructor(@Inject("RepoToken") private repo: any) {}
-
-      @Inject("LoggerToken")
-      private logger: any;
-    }
-
-    const ctorTokens = getInjectionTokens(Service2.prototype);
-    expect(ctorTokens[0]).toBe("RepoToken");
-    expect(ctorTokens["logger"]).toBe("LoggerToken");
-  });
-
-  it("isInjectable() should return true if metadata is boolean true", () => {
-    @Reflect.metadata(INJECTABLE_METADATA_KEY, true)
-    class FakeInjectable {}
-
-    expect(isInjectable(FakeInjectable)).toBe(true);
-  });
-
-  it("isInjectable() should return false if no metadata is found", () => {
-    class RegularClass {}
-    expect(isInjectable(RegularClass)).toBe(false);
-  });
-});

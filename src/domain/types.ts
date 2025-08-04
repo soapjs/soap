@@ -12,6 +12,6 @@ export type RemoveStats = {
 };
 
 export type AnyObject = { [key: string]: any };
-export type Query = unknown;
+export type DbQuery = unknown;
 export type Sort = { [field: string]: number };
 export type Filter = { field: string; name: string };

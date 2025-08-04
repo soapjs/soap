@@ -3,7 +3,7 @@ import { QueryBuilder } from "../domain/query-builder";
 import { Repository } from "../domain/repository";
 import { Result } from "../common/result";
 import { Mapper } from "./mapper";
-import { UpdateStats, RemoveStats, Query } from "../domain/types";
+import { UpdateStats, RemoveStats, DbQuery } from "../domain/types";
 import {
   FindParams,
   RemoveParams,
@@ -54,7 +54,7 @@ export class BaseRepository<EntityType, DocumentType = unknown>
     mapper?: Mapper<ResultType, AggregationType>
   ): Promise<Result<ResultType>> {
     try {
-      let query: Query;
+      let query: DbQuery;
 
       if (AggregationParams.isAggregationParams(paramsOrBuilder)) {
         query = paramsOrBuilder;
@@ -96,7 +96,7 @@ export class BaseRepository<EntityType, DocumentType = unknown>
     paramsOrBuilder: UpdateParams<Partial<EntityType>> | QueryBuilder
   ): Promise<Result<UpdateStats>> {
     try {
-      let query: Query;
+      let query: DbQuery;
 
       if (UpdateParams.isUpdateParams(paramsOrBuilder)) {
         const { updates, ...rest } = paramsOrBuilder;
@@ -154,7 +154,7 @@ export class BaseRepository<EntityType, DocumentType = unknown>
     paramsOrBuilder: RemoveParams | QueryBuilder
   ): Promise<Result<RemoveStats>> {
     try {
-      let query: Query;
+      let query: DbQuery;
 
       if (RemoveParams.isRemoveParams(paramsOrBuilder)) {
         query = paramsOrBuilder;
@@ -185,7 +185,7 @@ export class BaseRepository<EntityType, DocumentType = unknown>
     paramsOrBuilder?: CountParams | QueryBuilder
   ): Promise<Result<number>> {
     try {
-      let query: Query;
+      let query: DbQuery;
 
       if (CountParams.isCountParams(paramsOrBuilder)) {
         query = paramsOrBuilder;
@@ -214,7 +214,7 @@ export class BaseRepository<EntityType, DocumentType = unknown>
     paramsOrBuilder?: FindParams | QueryBuilder
   ): Promise<Result<EntityType[]>> {
     try {
-      let query: Query;
+      let query: DbQuery;
       if (FindParams.isFindParams(paramsOrBuilder)) {
         query = paramsOrBuilder;
       } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {

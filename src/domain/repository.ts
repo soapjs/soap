@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { QueryBuilder } from "./query-builder";
 import { Result } from "../common/result";
-import { RemoveStats, UpdateStats } from "./types";
+import { RemoveStats, UpdateStats, DbQuery } from "./types";
 import { Mapper } from "../data/mapper";
 import {
   AggregationParams,

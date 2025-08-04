@@ -1,6 +1,6 @@
-import { Query, RemoveStats, AnyObject, UpdateStats } from "../domain/types";
+import { DbQuery, RemoveStats, AnyObject, UpdateStats } from "../domain/types";
 import { FieldInfo, ModelConstructor } from "../types";
-import { QueryFactory } from "./query-factory";
+import { DbQueryFactory } from "./db-query-factory";
 
 /**
  * Defines the options for a source handling data models.
@@ -19,7 +19,7 @@ import { QueryFactory } from "./query-factory";
 export type SourceOptions<T> = {
   modelClass?: ModelConstructor<T>;
   modelFieldMappings?: { [key: string]: FieldInfo };
-  queries?: QueryFactory;
+  queries?: DbQueryFactory;
   [key: string]: unknown;
 };
 
@@ -39,7 +39,7 @@ export interface Source<DocumentType = unknown> {
    * @param {Query} [query] The search criteria.
    * @returns {Promise<DocumentType[]>} A promise that resolves to an array of documents
    */
-  find(query?: Query): Promise<DocumentType[]>;
+  find(query?: DbQuery): Promise<DocumentType[]>;
 
   /**
    * Abstract method to count documents in the data source that match the provided query.
@@ -47,7 +47,7 @@ export interface Source<DocumentType = unknown> {
    * @param {Query} [query] The search criteria.
    * @returns {Promise<number>} A promise that resolves to the count of documents.
    */
-  count(query?: Query): Promise<number>;
+  count(query?: DbQuery): Promise<number>;
 
   /**
    * Abstract method to perform an aggregation operation on the data source.
@@ -55,7 +55,7 @@ export interface Source<DocumentType = unknown> {
    * @param {Query} query The aggregation criteria.
    * @returns {Promise<T[]>} A promise that resolves to the result of the aggregation operation.
    */
-  aggregate<T = DocumentType>(query: Query): Promise<T[]>;
+  aggregate<T = DocumentType>(query: DbQuery): Promise<T[]>;
 
   /**
    * Abstract method to update documents in the data source.
@@ -63,7 +63,7 @@ export interface Source<DocumentType = unknown> {
    * @param {Query} query The update criteria and new document data.
    * @returns {Promise<UpdateStats>} A promise that resolves to the update statistics.
    */
-  update(query: Query): Promise<UpdateStats>;
+  update(query: DbQuery): Promise<UpdateStats>;
 
   /**
    * Abstract method to insert documents into the data source.
@@ -71,7 +71,7 @@ export interface Source<DocumentType = unknown> {
    * @param {Query} query The documents to insert.
    * @returns {Promise<DocumentType[]>} A promise that resolves to the inserted documents.
    */
-  insert(query: Query): Promise<DocumentType[]>;
+  insert(query: DbQuery): Promise<DocumentType[]>;
 
   /**
    * Abstract method to remove documents from the data source.
@@ -79,5 +79,5 @@ export interface Source<DocumentType = unknown> {
    * @param {Query} query The removal criteria.
    * @returns {Promise<RemoveStats>} A promise that resolves to the removal statistics.
    */
-  remove(query: Query): Promise<RemoveStats>;
+  remove(query: DbQuery): Promise<RemoveStats>;
 }

@@ -19,26 +19,27 @@ export class Result<ContentType = void> {
    */
   private constructor(data?: { content?: ContentType; failure?: Failure }) {
     const { content, failure } = data || {};
-    if (content !== undefined) {
-      this.content = content;
-    } else {
+    if (failure) {
+      this.failure = failure;
       this.content = undefined as ContentType;
+    } else {
+      this.failure = undefined;
+      this.content = content as ContentType;
     }
-    this.failure = failure;
   }
 
   /**
    * @returns {boolean}
    */
   public isFailure(): this is Result<ContentType> & { failure: Failure } {
-    return this.failure instanceof Failure;
+    return this.failure !== undefined;
   }
 
   /**
    * @returns {boolean}
    */
   public isSuccess(): this is Result<ContentType> & { failure: undefined } {
-    return !this.failure;
+    return this.failure === undefined;
   }
 
   /**
@@ -81,5 +82,15 @@ export class Result<ContentType = void> {
     }
 
     throw new Error("Wrong Failure type");
+  }
+
+  /**
+   * Get the error message if failure, otherwise return undefined
+   */
+  public getErrorMessage(): string | undefined {
+    if (this.isFailure()) {
+      return this.failure.error.message;
+    }
+    return undefined;
   }
 }
