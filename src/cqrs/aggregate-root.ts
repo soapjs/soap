@@ -1,12 +1,16 @@
 import { Entity } from "../domain/entity";
 import { DomainEvent, BaseDomainEvent } from "./event";
-import { Result } from "../common/result";
 
 /**
  * Aggregate Root interface for CQRS pattern
  * Aggregate roots are the entry points for commands and the source of domain events
  */
-export interface AggregateRoot<EntityType = unknown> extends Entity<EntityType> {
+export interface AggregateRoot<TEntity extends Entity<any>> {
+  /**
+   * The underlying entity
+   */
+  readonly entity: TEntity;
+  
   /**
    * Current version of the aggregate
    */
@@ -31,17 +35,13 @@ export interface AggregateRoot<EntityType = unknown> extends Entity<EntityType> 
 /**
  * Base implementation of Aggregate Root
  */
-export abstract class BaseAggregateRoot<EntityType = unknown> 
-  implements AggregateRoot<EntityType> {
+export abstract class BaseAggregateRoot<TEntity extends Entity<any>> 
+  implements AggregateRoot<TEntity> {
   
   public readonly version: number = 0;
   public readonly uncommittedEvents: DomainEvent[] = [];
-  public id?: string;
-  public rest?: EntityType;
 
-  constructor(id?: string) {
-    this.id = id;
-  }
+  constructor(public readonly entity: TEntity) {}
 
   /**
    * Add a domain event to the uncommitted events list
@@ -96,7 +96,7 @@ export abstract class BaseAggregateRoot<EntityType = unknown>
    * Get the aggregate ID
    */
   protected get aggregateId(): string {
-    return this.id || '';
+    return String(this.entity.id);
   }
 
   /**
@@ -104,12 +104,5 @@ export abstract class BaseAggregateRoot<EntityType = unknown>
    */
   protected get currentVersion(): number {
     return this.version;
-  }
-
-  /**
-   * Convert to JSON representation
-   */
-  public toJson(): EntityType {
-    return this.rest || {} as EntityType;
   }
 } 

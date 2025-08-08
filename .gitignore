@@ -130,4 +130,6 @@ dist
 .pnp.*
 
 build
-.codegpt
+examples
+packages
+

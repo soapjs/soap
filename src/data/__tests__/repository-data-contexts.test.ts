@@ -22,7 +22,7 @@ const MockSource = {
 
 const MockMapper = {
   toEntity: jest.fn(),
-  fromEntity: jest.fn(),
+  toModel: jest.fn(),
 };
 
 const MockNonDatabaseSource = {

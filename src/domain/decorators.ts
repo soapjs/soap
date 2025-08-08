@@ -2,23 +2,67 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import "reflect-metadata";
 
-import { FieldInfo } from "../types";
+import { PropertyInfo, TypeReference } from "../types";
+import { PropertyTransformer } from "../data/property-transformer";
 import { AutoTransaction } from "./auto-transaction";
 import { TransactionRunner } from "./transaction-runner";
+
+/**
+ * Options for EntityProperty decorator.
+ */
+export type EntityPropertyOptions = {
+  /** The type of the field (default: inferred from reflection) */
+  type?: TypeReference;
+  /** Default value for the field */
+  default?: unknown;
+  /** Whether the field can be null */
+  nullable?: boolean;
+  /** Whether the field is unique */
+  unique?: boolean;
+  /** Whether the field should be indexed */
+  index?: boolean;
+  /** Transformer for converting values between entity and model */
+  transformer?: PropertyTransformer;
+};
 
 /**
  * Decorator that assigns a domain-specific field name and captures the property type to a class property.
  * This metadata is used to map domain model fields to database-specific field names and to store type information.
  *
  * @param {string} domainFieldName - The name of the field as known in the domain model.
+ * @param {EntityPropertyOptions} [options] - Additional options for the property.
  * @returns {Function} - A decorator function that adds metadata to the class property.
  */
-export const EntityField = (domainFieldName: string) => {
+export const EntityProperty = (
+  domainFieldName: string, 
+  options?: EntityPropertyOptions
+) => {
   return function (target: unknown, propertyKey: string) {
-    const type = Reflect.getMetadata("design:type", target, propertyKey);
+    const reflectedType = Reflect.getMetadata("design:type", target, propertyKey);
+    
+    // Determine the type to use
+    let typeValue: TypeReference;
+    if (options?.type) {
+      typeValue = options.type;
+    } else if (reflectedType?.name) {
+      typeValue = reflectedType.name;
+    } else {
+      typeValue = 'unknown';
+    }
+    
+    const propertyInfo: PropertyInfo = {
+      name: domainFieldName,
+      type: typeValue,
+      default: options?.default,
+      nullable: options?.nullable,
+      unique: options?.unique,
+      index: options?.index,
+      transformer: options?.transformer
+    };
+    
     Reflect.defineMetadata(
-      "entityField",
-      { name: domainFieldName, type: type?.name },
+      "entityProperty",
+      propertyInfo,
       target,
       propertyKey
     );
@@ -27,9 +71,9 @@ export const EntityField = (domainFieldName: string) => {
 
 /**
  * A utility class that provides a method to resolve database field names
- * based on domain field names using metadata defined by the `EntityField` decorator.
+ * based on domain field names using metadata defined by the `EntityProperty` decorator.
  */
-export class FieldResolver<T> {
+export class PropertyResolver<T> {
   private instance: T;
 
   constructor(modelClass: new () => T) {
@@ -37,17 +81,59 @@ export class FieldResolver<T> {
   }
 
   /**
-   * Resolves the database field name and type for a given domain field name.
+   * Resolves the database field name and complete property information for a given domain field name.
    *
    * @param {string} domainField - The domain field name to resolve.
-   * @returns { FieldInfo | undefined } - The database field name and type if found, otherwise undefined.
+   * @returns {PropertyInfo & { modelFieldName: string } | undefined} - The complete property info if found, otherwise undefined.
    */
-  resolveDatabaseField(domainField: string): FieldInfo | undefined {
+  resolveDatabaseField(domainField: string): (PropertyInfo & { modelFieldName: string }) | undefined {
     for (const key of Reflect.ownKeys(this.instance as object)) {
-      const metadata = Reflect.getMetadata("entityField", this.instance, key);
+      const metadata = Reflect.getMetadata("entityProperty", this.instance, key);
       if (metadata?.name === domainField) {
-        return { name: key as string, type: metadata.type };
+        return { 
+          ...metadata,
+          modelFieldName: key as string 
+        };
       }
+    }
+    return undefined;
+  }
+
+  /**
+   * Gets all property mappings from the model class.
+   *
+   * @returns {Array<PropertyInfo & { modelFieldName: string, domainFieldName: string }>} - Array of all property mappings.
+   */
+  getAllPropertyMappings(): Array<PropertyInfo & { modelFieldName: string; domainFieldName: string }> {
+    const mappings: Array<PropertyInfo & { modelFieldName: string; domainFieldName: string }> = [];
+    
+    for (const key of Reflect.ownKeys(this.instance as object)) {
+      const metadata = Reflect.getMetadata("entityProperty", this.instance, key);
+      if (metadata) {
+        mappings.push({
+          ...metadata,
+          modelFieldName: key as string,
+          domainFieldName: metadata.name
+        });
+      }
+    }
+    
+    return mappings;
+  }
+
+  /**
+   * Resolves property info by model field name.
+   *
+   * @param {string} modelFieldName - The model field name to resolve.
+   * @returns {PropertyInfo & { domainFieldName: string } | undefined} - The property info if found, otherwise undefined.
+   */
+  resolveByModelField(modelFieldName: string): (PropertyInfo & { domainFieldName: string }) | undefined {
+    const metadata = Reflect.getMetadata("entityProperty", this.instance, modelFieldName);
+    if (metadata) {
+      return {
+        ...metadata,
+        domainFieldName: metadata.name
+      };
     }
     return undefined;
   }

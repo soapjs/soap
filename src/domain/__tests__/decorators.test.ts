@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import {
-  EntityField,
-  FieldResolver,
+  EntityProperty,
+  PropertyResolver,
   IsTransaction,
   UseSession,
 } from "../decorators";
@@ -26,14 +26,14 @@ jest.mock("../transaction-runner", () => {
 describe("FieldResolver", () => {
   class ObjectId {}
   class TestModel {
-    @EntityField("domainId")
+    @EntityProperty("domainId")
     db_id: ObjectId;
 
-    @EntityField("domainName")
+    @EntityProperty("domainName")
     db_name: string;
   }
 
-  const resolver = new FieldResolver(TestModel);
+  const resolver = new PropertyResolver(TestModel);
 
   it("should resolve the correct database field name and type from a domain field name", () => {
     const result = resolver.resolveDatabaseField("domainId");

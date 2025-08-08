@@ -67,33 +67,4 @@ export abstract class BaseReadModel<TData = unknown> implements ReadModel<TData>
   }
 }
 
-/**
- * Read Model Repository interface
- * Specialized for read models with optimized query methods
- */
-export interface ReadModelRepository<TReadModel extends ReadModel> {
-  /**
-   * Find a read model by ID
-   */
-  findById(id: string): Promise<Result<TReadModel | null>>;
-  
-  /**
-   * Find multiple read models
-   */
-  find(criteria?: any): Promise<Result<TReadModel[]>>;
-  
-  /**
-   * Save or update a read model
-   */
-  save(readModel: TReadModel): Promise<Result<TReadModel>>;
-  
-  /**
-   * Delete a read model
-   */
-  delete(id: string): Promise<Result<void>>;
-  
-  /**
-   * Count read models
-   */
-  count(criteria?: any): Promise<Result<number>>;
-}
+

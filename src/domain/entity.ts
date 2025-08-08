@@ -2,28 +2,20 @@
 import { AnyObject } from "./types";
 
 /**
+ * Represents a unique identifier for an entity.
+ * Can be either a string (UUID, custom string IDs) or a number (auto-increment).
+ */
+export type EntityId = string | number;
+
+/**
  * Represents an Entity interface.
  * @interface
- * @template ObjectType - The type of the JSON representation of the entity.
- * @template RestType - The type of additional properties in the entity.
+ * @template TId - The type of the entity ID (string or number).
  */
-export interface Entity<ObjectType = AnyObject, RestType = AnyObject> {
+export interface Entity<TId extends EntityId = EntityId> {
   /**
    * The unique identifier of the entity.
-   * @type {string}
+   * @type {TId}
    */
-  id?: string;
-
-  /**
-   * Additional properties of the entity.
-   * @type {RestType | undefined}
-   */
-  rest?: RestType;
-
-  /**
-   * Converts the entity to its JSON representation.
-   * @interface
-   * @returns {ObjectType} The JSON representation of the entity.
-   */
-  toJson(): ObjectType;
+  readonly id: TId;
 }

@@ -5,7 +5,7 @@ import { FindParams } from "../../domain/params";
 import { Result } from "../../common/result";
 import { Failure } from "../../common/failure";
 import { UpdateStats, RemoveStats } from "../../domain/types";
-import { BaseRepository } from "../base-repository";
+import { ReadWriteRepository } from "../read-write-repository";
 import { QueryBuilder } from "../../domain/query-builder";
 
 class MockQueryBuilder extends QueryBuilder {
@@ -14,7 +14,7 @@ class MockQueryBuilder extends QueryBuilder {
   }
 }
 
-describe("BaseRepository class", () => {
+describe("ReadWriteRepository class", () => {
   const dataContext: DatabaseContext = {
     isDatabaseContext: true,
     source: {
@@ -27,7 +27,7 @@ describe("BaseRepository class", () => {
     } as unknown as Source,
     mapper: {
       toEntity: jest.fn((doc) => doc),
-      fromEntity: jest.fn((entity) => entity),
+      toModel: jest.fn((entity) => entity),
     },
     sessions: {
       transactionScope: null,
@@ -38,7 +38,7 @@ describe("BaseRepository class", () => {
     },
   };
 
-  const repository = new BaseRepository(dataContext);
+  const repository = new ReadWriteRepository(dataContext);
 
   afterEach(() => {
     jest.clearAllMocks();

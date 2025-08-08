@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Result } from "../common/result";
 import { DatabaseContext } from "../data/repository-data-contexts";
-import { isRepository } from "../data/base-repository";
+import { isReadWriteRepository } from "../data/read-write-repository";
 import { DatabaseSession } from "../data/database-session";
 
 /**
@@ -44,7 +44,7 @@ export abstract class Transaction<T = unknown> {
     this.components.forEach((component) => {
       if (Reflect.getMetadata("useSession", component)) {
         if (
-          isRepository(component) &&
+          isReadWriteRepository(component) &&
           DatabaseContext.isDatabaseContext(component.context) &&
           !component.context.sessions.hasSession(this.id)
         ) {

@@ -1,9 +1,10 @@
 import { BaseAggregateRoot, AggregateRoot } from '../aggregate-root';
 import { BaseDomainEvent, DomainEvent } from '../event';
+import { Entity } from '../../domain/entity';
 import { Result } from '../../common/result';
 
 describe('Aggregate Root Pattern', () => {
-  interface TestEntityData {
+  interface TestEntity extends Entity<string> {
     name: string;
     value: number;
   }
@@ -18,31 +19,34 @@ describe('Aggregate Root Pattern', () => {
     }
   }
 
-  class TestAggregate extends BaseAggregateRoot<TestEntityData> {
-    private _name: string = '';
-    private _value: number = 0;
-
-    constructor(id?: string) {
-      super(id);
+  class TestAggregate extends BaseAggregateRoot<TestEntity> {
+    constructor(entity: TestEntity) {
+      super(entity);
     }
 
     get name(): string {
-      return this._name;
+      return this.entity.name;
     }
 
     get value(): number {
-      return this._value;
+      return this.entity.value;
     }
 
     setName(name: string): void {
-      this._name = name;
-      const event = new TestEvent(`Name changed to: ${name}`, this.id, this.version);
+      const updatedEntity: TestEntity = {
+        ...this.entity,
+        name
+      };
+      const event = new TestEvent(`Name changed to: ${name}`, this.entity.id, this.version);
       this.addDomainEvent(event);
     }
 
     setValue(value: number): void {
-      this._value = value;
-      const event = new TestEvent(`Value changed to: ${value}`, this.id, this.version);
+      const updatedEntity: TestEntity = {
+        ...this.entity,
+        value
+      };
+      const event = new TestEvent(`Value changed to: ${value}`, this.entity.id, this.version);
       this.addDomainEvent(event);
     }
 
@@ -52,26 +56,32 @@ describe('Aggregate Root Pattern', () => {
         (this as any).version++;
       }
     }
-
-    toJson(): TestEntityData {
-      return {
-        name: this._name,
-        value: this._value
-      };
-    }
   }
 
   describe('BaseAggregateRoot', () => {
-    it('should create aggregate with ID', () => {
-      const aggregate = new TestAggregate('test-id');
+    it('should create aggregate with entity', () => {
+      const entity: TestEntity = {
+        id: 'test-id',
+        name: 'test',
+        value: 42
+      };
+      const aggregate = new TestAggregate(entity);
       
-      expect(aggregate.id).toBe('test-id');
+      expect(aggregate.entity).toBe(entity);
+      expect(aggregate.entity.id).toBe('test-id');
+      expect(aggregate.name).toBe('test');
+      expect(aggregate.value).toBe(42);
       expect(aggregate.version).toBe(0);
       expect(aggregate.uncommittedEvents).toHaveLength(0);
     });
 
     it('should add domain events to uncommitted events', () => {
-      const aggregate = new TestAggregate('test-id');
+      const entity: TestEntity = {
+        id: 'test-id',
+        name: 'test',
+        value: 42
+      };
+      const aggregate = new TestAggregate(entity);
       
       aggregate.setName('test name');
       
@@ -80,10 +90,15 @@ describe('Aggregate Root Pattern', () => {
     });
 
     it('should mark events as committed', () => {
-      const aggregate = new TestAggregate('test-id');
+      const entity: TestEntity = {
+        id: 'test-id',
+        name: 'test',
+        value: 42
+      };
+      const aggregate = new TestAggregate(entity);
       
       aggregate.setName('test name');
-      aggregate.setValue(42);
+      aggregate.setValue(100);
       
       expect(aggregate.uncommittedEvents).toHaveLength(2);
       
@@ -93,65 +108,86 @@ describe('Aggregate Root Pattern', () => {
     });
 
     it('should load from history', () => {
-      const aggregate = new TestAggregate('test-id');
+      const entity: TestEntity = {
+        id: 'test-id',
+        name: 'test',
+        value: 42
+      };
+      const aggregate = new TestAggregate(entity);
       const events = [
         new TestEvent('event1', 'test-id', 1),
         new TestEvent('event2', 'test-id', 2)
       ];
-      
+
       aggregate.loadFromHistory(events);
-      
+
       // The apply method increments version for each event
-      expect(aggregate.version).toBe(2);
+      expect((aggregate as any).version).toBe(2);
     });
 
     it('should create domain events with correct properties', () => {
-      const aggregate = new TestAggregate('test-id');
+      const entity: TestEntity = {
+        id: 'test-id',
+        name: 'test',
+        value: 42
+      };
+      const aggregate = new TestAggregate(entity);
       
-      aggregate.setName('test name');
+      aggregate.setName('new name');
       
-      const event = aggregate.uncommittedEvents[0] as TestEvent;
+      const event = aggregate.uncommittedEvents[0];
       expect(event.aggregateId).toBe('test-id');
       expect(event.version).toBe(0);
-      expect(event.data).toBe('Name changed to: test name');
-    });
-
-    it('should return correct aggregate ID', () => {
-      const aggregate = new TestAggregate('test-id');
-      
-      expect(aggregate['aggregateId']).toBe('test-id');
-    });
-
-    it('should return correct current version', () => {
-      const aggregate = new TestAggregate('test-id');
-      
-      expect(aggregate['currentVersion']).toBe(0);
-    });
-
-    it('should convert to JSON', () => {
-      const aggregate = new TestAggregate('test-id');
-      aggregate.setName('test name');
-      aggregate.setValue(42);
-      
-      const json = aggregate.toJson();
-      
-      expect(json).toEqual({
-        name: 'test name',
-        value: 42
-      });
+      expect(event.eventType).toBe('TestEvent');
     });
   });
 
-  describe('Aggregate Root Interface', () => {
-    it('should implement AggregateRoot interface', () => {
-      const aggregate: AggregateRoot<TestEntityData> = new TestAggregate('test-id');
+  describe('Entity Interface', () => {
+    it('should implement Entity interface correctly', () => {
+      const entity: TestEntity = {
+        id: 'test-id',
+        name: 'test',
+        value: 42
+      };
+      const aggregate = new TestAggregate(entity);
       
-      expect(aggregate.id).toBeDefined();
-      expect(aggregate.version).toBeDefined();
-      expect(aggregate.uncommittedEvents).toBeDefined();
-      expect(typeof aggregate.markEventsAsCommitted).toBe('function');
-      expect(typeof aggregate.loadFromHistory).toBe('function');
-      expect(typeof aggregate.toJson).toBe('function');
+      expect(aggregate.entity.id).toBe('test-id');
+      expect(aggregate.entity.name).toBe('test');
+      expect(aggregate.entity.value).toBe(42);
+    });
+  });
+
+  describe('Type Safety', () => {
+    it('should work with different ID types', () => {
+      // String ID
+      interface StringEntity extends Entity<string> {
+        name: string;
+      }
+
+      class StringAggregate extends BaseAggregateRoot<StringEntity> {
+        constructor(entity: StringEntity) {
+          super(entity);
+        }
+      }
+
+      const stringEntity: StringEntity = { id: 'test-id', name: 'test' };
+      const stringAggregate = new StringAggregate(stringEntity);
+      expect(typeof stringAggregate.entity.id).toBe('string');
+
+      // Number ID
+      interface NumberEntity extends Entity<number> {
+        name: string;
+      }
+
+      class NumberAggregate extends BaseAggregateRoot<NumberEntity> {
+        constructor(entity: NumberEntity) {
+          super(entity);
+        }
+      }
+
+      const numberEntity: NumberEntity = { id: 123, name: 'test' };
+      const numberAggregate = new NumberAggregate(numberEntity);
+      expect(typeof numberAggregate.entity.id).toBe('number');
     });
   });
 }); 

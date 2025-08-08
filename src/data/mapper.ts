@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { TransformersMap } from "./property-transformer";
+
 /**
  * Represents a mapper that converts between the EntityType and the DocumentType.
  * EntityType is the domain entity type used in the business logic layer.
@@ -19,7 +22,12 @@ export interface Mapper<EntityType = unknown, ModelType = unknown> {
    * @param {EntityType} entity The domain entity from the business logic layer.
    * @returns {ModelType} The document for the database layer.
    */
-  fromEntity?(entity: EntityType, ...args: any[]): ModelType;
+  toModel?(entity: EntityType, ...args: any[]): ModelType;
+
+  /**
+   * The transformers for the mapper.
+   */
+  transformers?: TransformersMap;
 }
 
 /**

@@ -11,7 +11,7 @@ export type RemoveStats = {
   deletedCount?: number;
 };
 
-export type AnyObject = { [key: string]: any };
+export type AnyObject = Record<string, unknown>;
 export type DbQuery = unknown;
 export type Sort = { [field: string]: number };
 export type Filter = { field: string; name: string };

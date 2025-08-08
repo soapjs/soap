@@ -1,458 +1,361 @@
-# SoapJS
-## OMG, Yet Another Framework
-Yes, we know there are many frameworks out there, and they are excellent. However, there's a gap: separating logic from the framework itself to ease the trouble during migration or framework switching. As backend developers, we often had to rewrite code tailored to specific frameworks. SoapJS, rooted in Clean Architecture, offers customizable code structures through configuration files and presets, allowing you to decide on your code's structure. We provide a solution that can be adapted and applied as preferred, eliminating the need to start from scratch. Our CLI facilitates file generation based on configurations, letting developers focus on writing the actual code.
+# SoapJS - Clean Architecture Framework for TypeScript
 
-## Description
-**SoapJS** is a framework designed to empower developers by adhering to the principles of Clean Architecture, enhancing modularity and maintainability in web application development.
+**Build scalable, maintainable applications with enterprise-ready Clean Architecture patterns**
 
-## Development Status and Future Plans
+SoapJS is a comprehensive TypeScript framework that provides Clean Architecture patterns including Domain-Driven Design (DDD), Command Query Responsibility Segregation (CQRS), Event Sourcing, and more. It's designed to work with any framework while maintaining type safety and developer experience.
 
-The `@soapjs/soap` package, along with its related packages, is currently under active development. As these packages have not yet reached version 1.0.0, they are subject to potentially significant changes. We release updates at least once a week.Currently, the documentation on [docs.soapjs.com](http://docs.soapjs.com) is not being updated in real-time but will undergo comprehensive updates to coincide with the release of version 1.0.0 of our packages.
+## What is SoapJS?
 
-**Pre-release Usage Notice:**
-While you are welcome to download and use the packages, please be aware that they are not yet considered stable releases. The official announcement and launch of these packages will coincide with the release of version 1.0.0.
+SoapJS is a framework-agnostic toolkit that brings enterprise architecture patterns to your applications. Whether you're building microservices, monoliths, or real-time applications, SoapJS provides the abstractions and patterns you need to create maintainable, scalable code.
 
-**Current and Upcoming Features:**
-- Our development roadmap includes releasing fully documented and tested packages for several frameworks and technologies:
-  - **Express Framework Integration** (`@soapjs/soap-express`)
-  - **NestJS Framework Integration** (`@soapjs/soap-nestjs`)
-  - **Authentication** (`@soapjs/soap-auth`)
-  - **Database Integration** for:
-    - MongoDB (`@soapjs/soap-node-mongo`)
-    - PostgreSQL (`@soapjs/soap-node-postgres`)
-    - Redis (`@soapjs/soap-node-redis`)
-    - MySQL (`@soapjs/soap-node-mysql`)
-  - **CLI Updates**: We are also focusing on updating the Command Line Interface to enhance usability and features.
+### Key Benefits
 
-**Changelog:**
+- **🏗️ Clean Architecture** - DDD, CQRS, Event Sourcing out of the box
+- **🔧 Framework Agnostic** - Works with Express, NestJS, Fastify, and more
+- **🗄️ Database Agnostic** - MongoDB, PostgreSQL, MySQL, Redis support
+- **🔍 Type-Safe** - Full TypeScript support with generics
+- **⚡ Real-Time Ready** - WebSocket and event-driven patterns
+- **📡 Event-Driven** - Built-in event bus and messaging patterns
+- **🛡️ Enterprise Features** - Security, audit logging, transaction management
 
-More information can be found later in this README.
+## 🚀 Quick Start
 
-**New Features**
-- **Event Bus Components:**
-  - Added an `EventBus` interface and implementations for various messaging systems (e.g., RabbitMQ, Kafka).
-  - Introduced support for advanced message processing strategies, including retries, dead-letter queues (DLQs), and message validation.
+### Installation
 
-- **WebSocket Components:**
-  - Added a robust `WebSocketClient` with features like automatic reconnection, rate limiting, subscriptions, and custom authentication strategies.
-  - Added a `CustomWebSocketServer` with client management, message broadcasting, and heartbeat support.
+```bash
+npm install @soapjs/soap
+```
 
-- **Dependency Injection Support:**
-  - Introduced decorators for dependency injection to enable seamless integration with frameworks like `inversify` or `nestjs` without directly coupling the core logic to these libraries.
+### Basic Usage
 
-**Enhancements**
-- **Database Transactions:**
-  - Refactored database transaction definitions to improve flexibility and maintainability.
+```typescript
+import { 
+  Entity, 
+  ReadWriteRepository, 
+  UseCase, 
+  Result,
+  Where 
+} from '@soapjs/soap';
 
-- **Result and Failure:**
-  - Made cosmetic changes to the `Result` and `Failure` classes for improved clarity and usability in handling application errors and outcomes.
+// Define your domain entity
+class User implements Entity {
+  readonly id: number;
+  readonly name: string;
+  readonly email: string;
+  readonly age: number;
+}
 
-**Future Expansions:**
-- Following the initial releases, we plan to extend support to additional frameworks and platforms such as:
-  - **NestJS**: Dedicated package integration.
-  - **AWS**: Solutions tailored for Amazon Web Services.
-  - And more based on community feedback and demand.
+// Create a use case
+class CreateUserUseCase extends UseCase<User> {
+  constructor(
+    @Inject('UserRepository')
+    private userRepo: ReadWriteRepository<User>
+  ) {
+    super();
+  }
 
-We value community input and encourage users to provide feedback and contribute to the development process. Stay tuned for more updates and please consider the current stage of development when using the packages in production environments.
+  async execute(data: { name: string; email: string; age: number }): Promise<Result<User>> {
+    const user: User = {
+      id: generateId(), // Your ID generation logic
+      name: data.name,
+      email: data.email,
+      age: data.age
+    };
+    return this.userRepo.add([user]);
+  }
+}
+
+// Query with type-safe query builder
+const activeUsers = await userRepo.find(
+  Where.valueOf('status').isEq('active')
+    .and.valueOf('age').isGte(18)
+);
+```
+
+## Architecture Components
+
+SoapJS is built around several core components that work together to provide a complete Clean Architecture solution:
+
+### **Domain Layer**
+- **Entities** - Core business objects with identity (interfaces)
+- **Value Objects** - Immutable objects without identity
+- **Aggregates** - Clusters of related entities
+- **Domain Events** - Business events that occur in the domain
+
+### **Application Layer**
+- **Use Cases** - Application-specific business rules
+- **Commands & Queries** - CQRS pattern implementation
+- **Event Handlers** - Process domain events
+- **Transaction Management** - ACID transaction support
+
+### **Infrastructure Layer**
+- **Repositories** - Data access abstractions (ReadRepository, ReadWriteRepository)
+- **Event Bus** - Message broker integrations
+- **HTTP Routing** - Framework-agnostic routing
+- **WebSocket Support** - Real-time communication
+
+### **Repository Pattern**
+SoapJS provides base repository classes that you can extend to create your own implementations:
+
+- **ReadRepository** - Base class for read-only operations
+- **ReadWriteRepository** - Base class for full CRUD operations
+- **Custom Implementations** - Extend base classes for your specific needs
+
+Learn more in the [Repository Pattern Guide](docs/REPOSITORY-PATTERN.md).
+
+### **Cross-Cutting Concerns**
+- **Dependency Injection** - Service container
+- **Validation** - Request/response validation
+- **Logging** - Structured logging
+- **Error Handling** - Consistent error management
+
+## Why SoapJS?
+
+### **Framework Agnostic**
+Write your business logic once and use it with any framework:
+
+```typescript
+// This code works with Express, NestJS, Fastify, or any other framework
+class CreateUserUseCase extends UseCase<User> {
+  constructor(
+    @Inject('UserRepository')
+    private userRepo: ReadWriteRepository<User>
+  ) {
+    super();
+  }
+
+  async execute(data: CreateUserData): Promise<Result<User>> {
+    const user: User = {
+      id: generateId(),
+      name: data.name,
+      email: data.email
+    };
+    return this.userRepo.add([user]);
+  }
+}
+```
+
+### **Type-Safe Query Builder**
+Same query syntax for all databases:
+
+```typescript
+// Works with MongoDB, PostgreSQL, MySQL, Redis
+const users = await userRepo.find(
+  Where.valueOf('status').isEq('active')
+    .and.valueOf('age').isGte(18)
+    .and.valueOf('email').like('@gmail.com')
+);
+```
+
+### **Enterprise-Ready Patterns**
+Built-in support for complex business requirements:
+
+```typescript
+// CQRS with event sourcing
+@CommandHandler()
+class CreateOrderCommandHandler {
+  async execute(command: CreateOrderCommand): Promise<Result<void>> {
+    // Command handling logic
+  }
+}
+
+@QueryHandler()
+class GetOrdersQueryHandler {
+  async execute(query: GetOrdersQuery): Promise<Result<OrderDto[]>> {
+    // Query handling logic
+  }
+}
+```
+
+## Documentation
+
+### **Core Concepts**
+- **[CQRS Pattern](docs/CQRS.md)** - Command Query Responsibility Segregation
+- **[Event Bus](docs/EVENT-BUS.md)** - Event-driven architecture and messaging
+- **[Query Builder](docs/QUERY-BUILDER.md)** - Type-safe database queries
+- **[Repository Pattern](docs/REPOSITORY-PATTERN.md)** - Data access abstractions
+- **[Transactions](docs/TRANSACTIONS.md)** - Database transaction management
+- **[HTTP Routing](docs/ROUTES.md)** - Framework-agnostic routing system
+- **[Socket Communication](docs/SOCKET.md)** - Real-time communication patterns
+- **[Where Conditions](docs/WHERE.md)** - Complex query condition building
+
+## Use Cases
+
+SoapJS is designed for applications that need:
+
+### **Enterprise Applications**
+- Complex business logic with multiple domains
+- High scalability and maintainability requirements
+- Strict compliance and audit requirements
+- Team collaboration on large codebases
+
+### **Microservices**
+- Consistent architecture across services
+- Event-driven communication between services
+- Independent deployment and scaling
+- Service-to-service messaging
+
+### **Real-Time Applications**
+- WebSocket-based real-time features
+- Event-driven user interactions
+- Live data synchronization
+- Chat and collaboration features
+
+### **Legacy Modernization**
+- Gradual migration from monolithic applications
+- Framework-agnostic business logic
+- Database migration strategies
+- API modernization
+
+## Current Status
+
+### ** Ready to Use**
+- **Core Framework** - Complete Clean Architecture implementation
+- **CQRS Pattern** - Full command/query separation with event sourcing
+- **Repository Pattern** - Base classes for custom implementations
+- **Event Bus** - Built-in event-driven messaging
+- **HTTP Routing** - Framework-agnostic routing system
+- **WebSocket Support** - Real-time communication patterns
+- **Transaction Management** - ACID transaction support
+- **Type-Safe Query Builder** - Database-agnostic querying
+- **Dependency Injection** - Service container and DI
+- **Validation** - Request/response validation
+- **Error Handling** - Consistent error management
+
+### ** In Development**
+- **Framework Integrations** - Express, NestJS, Fastify adapters
+- **Database Adapters** - MongoDB, PostgreSQL, MySQL, Redis connectors
+- **Event Bus Adapters** - RabbitMQ, Kafka, AWS SQS integrations
+- **CLI Tools** - Code generation and project scaffolding
+- **Boilerplates** - Complete application templates
+- **Examples** - Real-world application examples
 
 ## Getting Started
-Everything you need to know can be found at [SoapJS Documentation](https://docs.soapjs.com).
 
-To install the package, use the command:
+### **1. Install Core Package**
+```bash
+npm install @soapjs/soap
 ```
-npm i @soapjs/soap
-# or
-# yarn add @soapjs/soap
-```
-However, we recommend familiarizing yourself with the documentation and CLI at the provided address.
 
-## Usage
-This package does not include dependencies, IoC, databases, or web frameworks; you must provide them on your own. This makes the SoapJS package flexible. We also have several dedicated packages (some still in development).
-
-For MongoDB, Redis, and MySQL databases, you will find necessary helpers in the packages `@soapjs/soap-node-mongo`, `@soapjs/soap-node-redis`, and `@soapjs/soap-node-mysql` respectively. 
-
-There are also dedicated packages for web frameworks, containing dedicated routers, helpers, and startup scripts. They are divided accordingly: `@soapjs/soap-express`, `@soapjs/soap-nestjs`, and `@soapjs/soap-aws`.
-
-Using the `@soapjs/soap` package:
-
-Soap provides interfaces, abstractions, and basic implementations to help organize code and maintain the structure you define in clean architecture.
-
-Example usage:
-
-### Dependencies
-Every created component from the domain layer must be bound in a container. How you do this depends on you; you can use our container or, for example, Inversify. It's important to use strings as labels and bind interfaces to implementations from the data layer directly or to classes like controllers or use cases.
-
+### **2. Create Your First Entity**
 ```typescript
-import * as Soap from '@soapjs/soap';
-import { Container } from 'inversify';
+import { Entity } from '@soapjs/soap';
 
-export class Dependencies implements Soap.Dependencies {
-  constructor(public readonly container: Container){}
-  public async configure() {
-    // rest of the components ...
-    this.container
-      .bind<CustomerController>(CustomerController.Token)
-      .to(CustomerController);
-  }
+interface User extends Entity {
+  readonly name: string;
+  readonly email: string;
+  readonly age: number;
 }
 ```
 
-### Route
-A route is an object containing a description, route instructions, and the handler to be invoked upon route activation. A route may also contain options regarding authentication, validation, or request and response mapping. Middleware implementations for these options must be provided by you. To construct a `RouteIO`, use the interface from the `@soapjs/soap` package.
-
+### **3. Create a Use Case**
 ```typescript
-import * as Soap from '@soapjs/soap';
-import { Container } from 'inversify';
+import { UseCase, ReadWriteRepository, Result } from '@soapjs/soap';
 
-export class GetCustomerDetailsRoute extends Soap.GetRoute {
-  static create(container: Container) {
-    const controller = container.get<CustomersController>(CustomersController.Token);
-    const handler = controller.getCustomerDetails.bind(controller);
-
-    // ... other setup operations
-
-    return new GetCustomerDetailsRoute('customers/:id', handler, {
-      io: new GetCustomerDetailsRouteIO()
-    });
-  }
-}
-```
-
-### Route Model
-Similar to a regular model, but this one should reside alongside routes rather than with other database models. It's a special type of model dedicated only to routes.
-
-```typescript
-export type GetCustomerDetailsResponse = {
-  orders: OrderModel[],
-  address: AddressModel,
-  loyalty_points: number
-}
-```
-
-### RouteIO
-Contains methods for parsing a request into a handler's input and vice versa, parsing the handler's result into a response. `RouteIO` should be executed before the handler is run. 
-
-```typescript
-import * as Soap from '@soapjs/soap';
-import { Request, Response } from 'express';
-
-export class GetCustomerDetailsRouteIO implements Soap.RouteIO<Customer, GetCustomerDetailsResponse, Request, Response> {
-  public toResponse(response: Response, result: Result<Customer>) {
-    if (result.isFailure) {
-      // if error is instanceof Soap.HttpError or 500
-      const status = result.failure.error.status || 500;
-      const message = result.failure.error.message || 'YOUR MESSAGE';
-      
-      response.status(status).send(message);
-    } else {
-      const { ... } = result.content;
-      // map result content to output if needed
-      response.status(200).send({...});
-    }
-  }
-  
-  public fromRequest(request: Request): string {
-    // add appropriate logic and data validation
-    return request.params.id;
-  }
-}
-```
-
-### Router
-
-The `Router` in `@soapjs/soap` serves to manage routes, specifically embedding and executing them. To utilize the router, the framework and all dependencies must be initialized beforehand. The actual implementation of a router, such as `ExpressRouter` from the `@soapjs/soap-express` package, requires you to either write your own code or use existing implementations.
-
-Using a router is not mandatory but is recommended to facilitate the definition of paths and the management of settings associated with them. The router is also natively supported by the framework's CLI.
-
-#### Example Implementation for an Express-based Router
-
-```typescript
-import { ExpressRouter } from '@soapjs/soap-express';
-
-// Example implementation for an Express-based router
-export class MyRouter extends ExpressRouter {
-  constructor(private container: Container) {
-    super('api', 'v1');
-  }
-
-  public setupRoutes(): void {
-    /**
-     * Depending on your choice of where to specify the handler source, you can do it in the setupRoutes() method - the default approach - or inside the Route itself.
-     */
-    this.mount(GetCustomerDetailsRoute.create(this.container));
-  }
-}
-```
-
-The content of `setupRoutes` is not predefined but requires the use of `this.mount` to add a route to the router. If you wish to implement your own router or one for a framework other than Express, check the implementation of `ExpressRouter` in `@soapjs/soap-express` and use it as a basis for writing your own.
-
-### Controllers
-
-These are entry points for logic, where you should place and manage use cases. They shouldn't contain complex logic. Handlers, i.e., controller methods assigned to specific routes, can accept input data but should not directly handle, for example, requests. Instead, they should receive input prepared and mapped by `RouteIO`. Handlers return `Result` objects with expected outcomes or errors. You decide what to do with these in `RouteIO`.
-
-```typescript
-export class CustomerController {
-  static Token = 'CustomerController';
-
-  public async getCustomerDetails(input: string): Promise<Result<Customer>> {
-    let result: Result<Customer>;
-    // call use cases (may include simple logic)
-    return result;
-  }
-  ...
-}
-```
-
-### Use Case
-
-These are classes with a single public `execute` method, used to perform one more or less complex task. A use case may invoke other use cases to achieve the desired result. Use cases should be as simple as possible, but how you organize them depends on you.
-
-```typescript
-import * as Soap from '@soapjs/soap';
-// Example use case class
-export class ProcessOrderUseCase implements Soap.UseCase<OrderConfirmation>{
-  static Token = "ProcessOrderUseCase";
-
-  public async execute(
-    orderItems: Product[],
-    customerDetails: Customer,
-    paymentMethod: string,
-  ): Promise<Result<OrderConfirmation>> {
-    let confirmation: OrderConfirmation;
-    // logic ...
-    return Result.withSuccess(confirmation);
-  }
-}
-```
-
-### Repository and BaseRepository
-
-Repositories are components that perform operations on databases. They typically use one data context (i.e., database client or specific table), mapper, and query builder. Repositories should handle all data-related logic but not business logic (exceptions may include decisions like caching data). `BaseRepository` contains basic implementations and is tailored to using a single data context. If you need custom (dedicated) methods, parameters, or want to use multiple contexts, such as for aggregation, you should write your own implementation, perhaps by extending `BaseRepository`. Below are examples of setting up a repository and creating custom ones.
-
-```typescript
-// Example repository abstract class (or interface)
-export abstract class CustomerRepository extends Soap.Repository<Customer> {
-  static Token = "CustomerRepository";
-  // place for additional methods ...
-}
-
-// Example custom repository implementation
-export class CustomerRepositoryImpl extends Soap.BaseRepository<Customer, CustomerMongoModel> implements CustomerRepository {
+class CreateUserUseCase extends UseCase<User> {
   constructor(
-    context: Soap.DatabaseContext<Customer, CustomerMongoModel>,
-    // feel free to add more contexts if you need
+    @Inject('UserRepository')
+    private userRepo: ReadWriteRepository<User>
   ) {
+    super();
+  }
+
+  async execute(data: { name: string; email: string; age: number }): Promise<Result<User>> {
+    const user: User = {
+      id: generateId(), // Your ID generation logic
+      name: data.name,
+      email: data.email,
+      age: data.age
+    };
+    return this.userRepo.add([user]);
+  }
+}
+```
+
+### **4. Query Your Data**
+```typescript
+import { Where } from '@soapjs/soap';
+
+const activeUsers = await userRepo.find(
+  Where.valueOf('status').isEq('active')
+    .and.valueOf('age').isGte(18)
+);
+```
+
+### **5. Create Custom Repository Implementation**
+```typescript
+import { ReadWriteRepository, DatabaseContext } from '@soapjs/soap';
+
+class UserRepository extends ReadWriteRepository<User, UserDocument> {
+  constructor(context: DatabaseContext<User, UserDocument>) {
     super(context);
   }
-  // place for additional methods ...
-}
 
-// Example setup of repository and creation of custom ones in the Dependencies class
-export class Dependencies implements Soap.Dependencies {
-  public async configure(config: Config) {
-    // Creates a MongoDB client using the configuration provided.
-    // The 'SoapMongo.create' function initializes a client based on MongoDB settings defined in 'config.mongo'.
-    const mongoClient = await SoapMongo.create(config.mongo);
+  // Add custom methods specific to your domain
+  async findByEmail(email: string): Promise<Result<User | null>> {
+    return this.find(Where.valueOf('email').isEq(email));
+  }
 
-    // Creates a new DatabaseContext:
-    // 1. MongoSource: Represents the MongoDB collection using the MongoDB client. 
-    //    'CustomerMongoModel' refers to the model class that maps the MongoDB collection 'customers'.
-    // 2. CustomerMongoMapper: Handles the mapping of data between the domain entity and the database model.
-    // 3. MongoSessions: Represents the Mongo database session registry.
-    // 4. The 'modelClass' option specifies the model class that includes decorators for field mapping.
-    const context = new Soap.DatabaseContext(
-      new MongoSource<CustomerMongoModel>(mongoClient, 'customers'),
-      new CustomerMongoMapper(),
-      new MongoSessions(),
-      { modelClass: CustomerMongoModel }
-    );
-
-    // Creates an instance of 'CustomerRepositoryImpl' with the configured context.
-    // This repository implementation will handle all data operations for 'Customer' entities.
-    const impl = new CustomerRepositoryImpl(context);
-    // Alternatively, if using a generic repository pattern:
-    // const impl = new BaseRepository(context)
-
-    // Binds the 'CustomerRepositoryImpl' instance to the 'CustomerRepository' token in the IoC container.
-    // This makes 'CustomerRepositoryImpl' available for injection throughout the application.
-    this.container
-      .bind<CustomerRepository>(CustomerRepository.Token)
-      .toConstantValue(new CustomerRepositoryImpl(context));
+  async findActiveUsers(): Promise<Result<User[]>> {
+    return this.find(Where.valueOf('status').isEq('active'));
   }
 }
 ```
 
-### Sources (Collections)
-Sources are components that perform operations directly on a collection or table in the database using a client. To use them, you need a dedicated implementation, like `@soapjs/soap-node-mongo`, or you can write your own, ensuring consistency with the interface.
+For detailed information about creating custom repositories, see the [Repository Pattern Guide](docs/REPOSITORY-PATTERN.md).
 
-```typescript
-export class CustomerMongoSource extends MongoSource<CustomerMongoModel> {
-  constructor(client: MongoSource) {
-    super(client, 'customers.collection');
-  }
-  // additional methods...
-}
-```
+## Coming Soon
 
-### Mapper
-This component is used to map entities to models and vice versa, similar to `RouteIO`. Mappers should handle a single type of document, so you should create mappers per collection and repository. You don't necessarily need to use the mapper in your code if you're using existing implementations. `BaseRepository` handles this before and after executing commands on the collection, depending on the type of operation.
+### **Framework Integrations**
+- **Express Integration** - Seamless Express.js integration
+- **NestJS Integration** - NestJS module and decorators
+- **Fastify Integration** - Fastify plugin and decorators
 
-```typescript
-export class CustomerMongoMapper extends MongoMapper<Customer, CustomerMongoModel> {
-  public toEntity(model: CustomerMongoModel): Customer {
-    const { ... } = model;
-    // parsing model types to entity types ...
-    return new Customer(...);
-  }
-  
-  public fromEntity(entity:Customer): CustomerMongoModel {
-    const { ... } = entity;
-    // parsing entity types to model types ...
-    return removeUndefinedProperties({ ... });
-  }
-}
-```
+### **Database Adapters**
+- **MongoDB Adapter** - Native MongoDB support
+- **PostgreSQL Adapter** - PostgreSQL with TypeORM integration
+- **MySQL Adapter** - MySQL with TypeORM integration
+- **Redis Adapter** - Redis caching and session storage
 
-### Entity
-Mabe unlike in other frameworks, entities here are used as data containers in the domain layer. They may contain helper methods but should not include mappers to database documents (that's what mappers are for), and they should not directly reference databases. Treat them as data representations in logic, independent of the data source.
+### **Event Bus Adapters**
+- **RabbitMQ Adapter** - Message queuing with RabbitMQ
+- **Kafka Adapter** - Event streaming with Apache Kafka
+- **AWS SQS Adapter** - Cloud messaging with AWS SQS
 
-```typescript
-export class Customer {
-  constructor(
-    public readonly orders: Order[],
-    public readonly address: Address,
-    public readonly loyaltyPoints: number) {}
-}
-```
+### **CLI & Boilerplates**
+- **SoapJS CLI** - Code generation and project scaffolding
+- **Express Boilerplate** - Complete Express.js application template
+- **NestJS Boilerplate** - Complete NestJS application template
+- **Microservices Boilerplate** - Multi-service application template
 
-### Model
-`@soapjs/soap` allows defining data models either as classes or types. The choice between these depends on whether you prefer using decorators for automatic field mapping or manual field mappings for flexibility without decorators.
+### **Examples & Tutorials**
+- **E-commerce Example** - Complete e-commerce application
+- **Chat Application** - Real-time chat with WebSockets
+- **Task Management** - CQRS and event sourcing example
+- **User Management** - Authentication and authorization example
 
-#### Class-based Models with Decorators
-- **Use when**: You prefer an object-oriented approach with automatic field mapping via decorators.
-- **Benefits**: Simplifies ORM/ODM integration, supports encapsulation of business logic, and facilitates data validation.
-- **Example**:
-  ```typescript
-  import { ObjectId } from 'mongodb';
-  import { EntityField } from '@soapjs/soap';
+## Community
 
-  class CustomerMongoModel {
-    @EntityField('customerId')
-    _id: ObjectId;
+- **[GitHub Discussions](https://github.com/soapjs/soap/discussions)** - Ask questions and share ideas
+- **[Discord](https://discord.gg/soapjs)** - Join our community
+- **[Blog](https://blog.soapjs.com)** - Architecture insights and best practices
+- **[YouTube](https://youtube.com/@soapjs)** - Video tutorials and demos
 
-    @EntityField('customerName')
-    name: string;
-  }
-
-  const customerSource = new MongoSource<CustomerMongoModel>(..., { modelClass: CustomerMongoModel });
-  ```
-
-#### Type-based Models with Manual Field Mappings
-- **Use when**: You need flexibility or do not wish to use class decorators, often suitable for projects with schema-less NoSQL databases.
-- **Benefits**: Allows precise control over how entity properties map to database fields, especially when using utilities like `Where` to construct queries.
-- **Setup**:
-  - Specify `modelFieldMappings` in the `Source` to manually map entity properties to model properties.
-  - This approach is necessary if you opt-out of class-based models with decorators.
-
-**Example**:
-  ```typescript
-  const fieldMappings = {
-    customerId: { name: '_id', type: 'ObjectId' },
-    customerName: { name: 'name', type: 'string' }
-  };
-
-  const customerSource = new MongoSource<CustomerMongoModel>(..., { modelFieldMappings: fieldMappings });
-  ```
-
-**Integration with Database Queries**:
-- **With Decorators**: Field names should be automatically resolved in queries and the `Where` clauses.
-- **Without Decorators**: You must manually ensure that field names in `Where` clauses match those defined in `modelFieldMappings`. If no mappings are defined, the field names used in queries and `Where` must directly correspond to the database field names.
-
-Choosing between class-based and type-based models impacts how you interact with the database in `@soapjs/soap`. Making each suitable for different scenarios and database technologies.
-
-### Transactions
-Transactions are used to ensure that a sequence of operations on a database is executed atomically. This means either all operations succeed, or none of them are applied, maintaining data consistency and integrity.
-
-In this framework, transactions can be implemented in the following ways:
-
-1. **Custom Transaction Methods in Repositories**
-2. **Transaction Class and TransactionRunner**
-3. **Declarative Transactions with Decorators**
-
-[Click here for details](TRANSACTIONS.md)
-
-### Using Inject and Injectable Decorators
-
-The decorators **`@Injectable`** and **`@Inject`** provide a simple, framework-agnostic way to mark classes and class members for dependency injection. By default, **no** actual IoC container is included; instead, you set up your classes with these decorators, and then a **separate adapter** (for NestJS, Inversify, or another DI framework) can interpret the metadata and perform the actual binding/resolution.
-
-[Click here for details](DI.md)
-
-### Using Sockets
-
-Sockets provide a persistent, full-duplex communication channel over a single TCP connection. Unlike HTTP, which operates in a request-response model, Sockets enable real-time interaction between a client and a server, making them an excellent choice for applications requiring low-latency communication.
-
-[Click here for details](SOCKET.md)
-
-### Service and Toolset
-Services are used to communicate with other APIs or any other external data sources (not databases; that's what repositories and collections are for). Toolsets, on the other hand, are categorized sets of tools. Instead of having a general `Utils` or manager, it's a component where you can place any methods that don't fit into other patterns. They can be static or instantiated, and you can obtain them via a container.
-
-```typescript
-// Example service abstract class (or interface)
-export interface WeatherService {
-  static Token = "WeatherService";
-  public getWeatherByCity(city: string): Promise<Result<Weather>>;
-}
-
-// Example service implementation
-class WeatherServiceImpl implements WeatherService {
-  constructor(
-    private apiKey: string,
-    private baseUrl: string) {}
-
-  async getWeatherByCity(city: string): Promise<Result<Weather>> {
-    try {
-      const response =
-        await axios.get(`${this.baseUrl}?q=${city}&appid=${this.apiKey}`);
-      return Result.withSuccess(Weather.from(response.data));
-    } catch (error) {
-      return Result.withFailure(error);
-    }
-  }
-}
-// Example data toolset
-export class DateToolset {
-  static getFirstDayOfMonth(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
-  }
-  
-  static getLastDayOfMonth(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-  }
-}
-```
-
-### Using EventBus
-
-The `EventProcessor` and `EventBus` provides a flexible and scalable solution for managing events in distributed systems. With built-in support for retry policies, error handling, message parsing, and validation, the framework is designed to work seamlessly with various messaging systems like RabbitMQ, Kafka or AWS SQS.
-
-[Click here for details](EVENT-BUS.md)
-
-## Feeling overwhelmed?
-
-Fear not! We're developing a CLI (Work in Progress) and working on AI for even greater comfort. Stay tuned for more convenience!
-
-## Issues
-If you encounter any issues, please feel free to report them [here](https://github.com/soapjs/soap/issues/new/choose).
-
-## Contact
-For any questions, collaboration interests, or support needs, you can contact us through the following:
-
-- Official:
-  - Email: [contact@soapjs.com](mailto:contact@soapjs.com)
-  - Website: http://docs.soapjs.com
-- Radoslaw Kamysz:
-  - Email: [radoslaw.kamysz@gmail.com](mailto:radoslaw.kamysz@gmail.com)
-  - Warpcast: [@k4mr4ad](https://warpcast.com/k4mr4ad)
-  - Twitter: [@radoslawkamysz](https://x.com/radoslawkamysz)
 ## License
-SoapJS is licensed under the MIT License.
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Enterprise
+
+Need enterprise support, consulting, or custom integrations?
+
+- **Enterprise Support** - Priority support and SLAs
+- **Architecture Consulting** - Clean Architecture implementation
+- **Migration Services** - From legacy to Clean Architecture
+- **Training Programs** - Team training and workshops
+
+Contact us at [radoslaw.kamysz@gmail.com](mailto:radoslaw.kamysz@gmail.com)
+
+---
+
+**SoapJS** - Enterprise-ready Clean Architecture framework for scalable, maintainable applications.

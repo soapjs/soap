@@ -1,5 +1,9 @@
 import { BaseReadModel, ReadModel } from '../read-model';
 import { Result } from '../../common/result';
+import { ReadWriteRepository } from '../../data/read-write-repository';
+import { DatabaseContext } from '../../data/repository-data-contexts';
+import { Source } from '../../data/source';
+import { Where } from '../../domain/where';
 
 describe('Read Model Pattern', () => {
   interface TestReadModelData {
@@ -108,45 +112,43 @@ describe('Read Model Pattern', () => {
     });
   });
 
-  describe('Read Model Repository Interface', () => {
-    interface ReadModelRepository<T> {
-      findById(id: string): Promise<Result<T | null>>;
-      find(criteria?: any): Promise<Result<T[]>>;
-      save(model: T): Promise<Result<T>>;
-      delete(id: string): Promise<Result<void>>;
-      count(criteria?: any): Promise<Result<number>>;
-    }
+  describe('Read Model with Repository', () => {
+    const createMockContext = (): DatabaseContext<TestReadModel> => ({
+      isDatabaseContext: true,
+      source: {
+        find: jest.fn(),
+        count: jest.fn(),
+        aggregate: jest.fn(),
+        update: jest.fn(),
+        insert: jest.fn(),
+        remove: jest.fn(),
+      } as unknown as Source,
+      mapper: {
+        toEntity: jest.fn((doc: any) => doc as TestReadModel),
+        toModel: jest.fn((entity: any) => entity),
+      },
+      sessions: {
+        transactionScope: null,
+        createSession: jest.fn(),
+        deleteSession: jest.fn(),
+        getSession: jest.fn(),
+        hasSession: jest.fn(),
+      },
+    });
 
-    class MockReadModelRepository implements ReadModelRepository<TestReadModel> {
-      private models = new Map<string, TestReadModel>();
+    let repository: ReadWriteRepository<TestReadModel>;
+    let context: DatabaseContext<TestReadModel>;
 
-      async findById(id: string): Promise<Result<TestReadModel | null>> {
-        const model = this.models.get(id) || null;
-        return Result.withSuccess(model);
-      }
+    beforeEach(() => {
+      context = createMockContext();
+      repository = new ReadWriteRepository(context);
+    });
 
-      async find(criteria?: any): Promise<Result<TestReadModel[]>> {
-        const models = Array.from(this.models.values());
-        return Result.withSuccess(models);
-      }
-
-      async save(model: TestReadModel): Promise<Result<TestReadModel>> {
-        this.models.set(model.id, model);
-        return Result.withSuccess(model);
-      }
-
-      async delete(id: string): Promise<Result<void>> {
-        this.models.delete(id);
-        return Result.withSuccess();
-      }
-
-      async count(criteria?: any): Promise<Result<number>> {
-        return Result.withSuccess(this.models.size);
-      }
-    }
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
 
     it('should save and retrieve read model', async () => {
-      const repository = new MockReadModelRepository();
       const data: TestReadModelData = {
         name: 'test',
         count: 42,
@@ -155,25 +157,28 @@ describe('Read Model Pattern', () => {
       
       const readModel = new TestReadModel('test-id', data);
       
-      const saveResult = await repository.save(readModel);
+      // Mock the repository methods
+      (context.source.insert as jest.Mock).mockResolvedValue([readModel]);
+      (context.source.find as jest.Mock).mockResolvedValue([readModel]);
+      
+      const saveResult = await repository.add([readModel]);
       expect(saveResult.isSuccess()).toBe(true);
       
-      const findResult = await repository.findById('test-id');
+      const findResult = await repository.find({ where: new Where().valueOf('id').isEq('test-id') });
       expect(findResult.isSuccess()).toBe(true);
-      expect(findResult.content).toEqual(readModel);
+      expect(findResult.content).toEqual([readModel]);
     });
 
-    it('should return null for non-existent read model', async () => {
-      const repository = new MockReadModelRepository();
+    it('should return empty array for non-existent read model', async () => {
+      (context.source.find as jest.Mock).mockResolvedValue([]);
       
-      const result = await repository.findById('non-existent');
+      const result = await repository.find({ where: new Where().valueOf('id').isEq('non-existent') });
       
       expect(result.isSuccess()).toBe(true);
-      expect(result.content).toBeNull();
+      expect(result.content).toEqual([]);
     });
 
     it('should delete read model', async () => {
-      const repository = new MockReadModelRepository();
       const data: TestReadModelData = {
         name: 'test',
         count: 0,
@@ -181,25 +186,36 @@ describe('Read Model Pattern', () => {
       };
       
       const readModel = new TestReadModel('test-id', data);
-      await repository.save(readModel);
       
-      const deleteResult = await repository.delete('test-id');
+      // Mock the repository methods
+      (context.source.insert as jest.Mock).mockResolvedValue([readModel]);
+      (context.source.remove as jest.Mock).mockResolvedValue({ deletedCount: 1 });
+      (context.source.find as jest.Mock).mockResolvedValue([]);
+      
+      await repository.add([readModel]);
+      
+      const deleteResult = await repository.remove({ where: new Where().valueOf('id').isEq('test-id') });
       expect(deleteResult.isSuccess()).toBe(true);
       
-      const findResult = await repository.findById('test-id');
-      expect(findResult.content).toBeNull();
+      const findResult = await repository.find({ where: new Where().valueOf('id').isEq('test-id') });
+      expect(findResult.content).toEqual([]);
     });
 
     it('should count read models', async () => {
-      const repository = new MockReadModelRepository();
       const data: TestReadModelData = {
         name: 'test',
         count: 0,
         active: false
       };
       
-      await repository.save(new TestReadModel('id1', data));
-      await repository.save(new TestReadModel('id2', data));
+      const readModel1 = new TestReadModel('id1', data);
+      const readModel2 = new TestReadModel('id2', data);
+      
+      // Mock the repository methods
+      (context.source.insert as jest.Mock).mockResolvedValue([readModel1, readModel2]);
+      (context.source.count as jest.Mock).mockResolvedValue(2);
+      
+      await repository.add([readModel1, readModel2]);
       
       const countResult = await repository.count();
       

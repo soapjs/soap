@@ -1,24 +1,24 @@
 import { DbQuery, RemoveStats, AnyObject, UpdateStats } from "../domain/types";
-import { FieldInfo, ModelConstructor } from "../types";
+import { PropertyInfo, ConstructorOf } from "../types";
 import { DbQueryFactory } from "./db-query-factory";
 
 /**
  * Defines the options for a source handling data models.
- * This type allows specifying either a model class with `EntityField` decorators or a field mapping object, not both.
- * - Use `modelClass` if your data models are defined as classes and decorated with `EntityField`. This is the default approach.
+ * This type allows specifying either a model class with `EntityProperty` decorators or a field mapping object, not both.
+ * - Use `modelClass` if your data models are defined as classes and decorated with `EntityProperty`. This is the default approach.
  * - Use `modelFieldMappings` if your data models are defined as types, not classes, and you need explicit mapping between
  *   model properties and domain entity fields. This option is necessary when model definitions do not support decorators.
  *
  * @template T - The type of the model.
  * @property {ModelConstructor<T>?} modelClass - Optional. A constructor function for the model that should be used if
  *                                               models are defined as classes. Only specify this if you are using class-based models with decorators.
- * @property {{ [entityField: string]: FieldInfo }?} modelFieldMappings - Optional. An object mapping domain model field names
+ * @property {{ [EntityProperty: string]: FieldInfo }?} modelFieldMappings - Optional. An object mapping domain model field names
  *                                                               to their corresponding `FieldInfo`, including database field names and types.
  *                                                               Use this if your models are type-based and cannot use decorators.
  */
 export type SourceOptions<T> = {
-  modelClass?: ModelConstructor<T>;
-  modelFieldMappings?: { [key: string]: FieldInfo };
+  modelClass?: ConstructorOf<T>;
+  modelFieldMappings?: Record<string, PropertyInfo>;
   queries?: DbQueryFactory;
   [key: string]: unknown;
 };

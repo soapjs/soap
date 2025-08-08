@@ -1,13 +1,11 @@
 import { Failure } from "../common/failure";
 import { QueryBuilder } from "../domain/query-builder";
-import { Repository } from "../domain/repository";
+import { ReadOnlyRepository } from "../domain/repository";
 import { Result } from "../common/result";
 import { Mapper } from "./mapper";
-import { UpdateStats, RemoveStats, DbQuery } from "../domain/types";
+import { DbQuery } from "../domain/types";
 import {
   FindParams,
-  RemoveParams,
-  UpdateParams,
   CountParams,
   AggregationParams,
 } from "../domain/params";
@@ -22,12 +20,13 @@ import { RepositoryMethodError } from "../domain/errors";
 
 /**
  * @class
- * Represents a generic repository for managing database interactions.
+ * Represents a read-only repository for querying database data.
  *
- * Note: This repository should be used when we do not want to provide methods to modify the contents of collections in the database.
+ * This repository provides only read operations and should be used when
+ * you need to query data without modifying the database contents.
  */
-export class BaseRepository<EntityType, DocumentType = unknown>
-  implements Repository<EntityType, DocumentType>
+export class ReadRepository<EntityType, DocumentType = unknown>
+  implements ReadOnlyRepository<EntityType>
 {
   constructor(
     public readonly context:
@@ -80,95 +79,6 @@ export class BaseRepository<EntityType, DocumentType = unknown>
       return Result.withSuccess(
         conversionMapper.toEntity(aggregation) as ResultType
       );
-    } catch (error) {
-      return Result.withFailure(Failure.fromError(error));
-    }
-  }
-
-  /**
-   * Updates entities in the data source.
-   *
-   * @param {UpdateParams<Partial<EntityType>> | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the update operation.
-   *
-   * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
-   */
-  public async update(
-    paramsOrBuilder: UpdateParams<Partial<EntityType>> | QueryBuilder
-  ): Promise<Result<UpdateStats>> {
-    try {
-      let query: DbQuery;
-
-      if (UpdateParams.isUpdateParams(paramsOrBuilder)) {
-        const { updates, ...rest } = paramsOrBuilder;
-        const documents = updates.map((update) =>
-          this.context.mapper.fromEntity(update as EntityType)
-        );
-        query = { updates: documents, ...rest };
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
-      } else {
-        throw new RepositoryMethodError(
-          "paramsOrBuilder is neither a QueryBuilder nor a UpdateParams"
-        );
-      }
-
-      const stats = await this.context.source.update(query);
-
-      return Result.withSuccess(stats);
-    } catch (error) {
-      return Result.withFailure(Failure.fromError(error));
-    }
-  }
-
-  /**
-   * Adds entities to the data source.
-   *
-   * @param {EntityType[]} entities The entities to be added.
-   *
-   * @returns {Promise<Result<EntityType[]>>} The result of the add operation, containing the added entities or an error.
-   */
-  public async add(entities: EntityType[]): Promise<Result<EntityType[]>> {
-    try {
-      const documents = entities.map((entity) =>
-        this.context.mapper.fromEntity(entity)
-      );
-      const inserted = await this.context.source.insert(documents);
-      const newEntities = inserted.map((document) =>
-        this.context.mapper.toEntity(document)
-      );
-
-      return Result.withSuccess(newEntities);
-    } catch (error) {
-      return Result.withFailure(Failure.fromError(error));
-    }
-  }
-
-  /**
-   * Removes entities from the data source.
-   *
-   * @param {RemoveParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the remove operation.
-   *
-   * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
-   */
-  public async remove(
-    paramsOrBuilder: RemoveParams | QueryBuilder
-  ): Promise<Result<RemoveStats>> {
-    try {
-      let query: DbQuery;
-
-      if (RemoveParams.isRemoveParams(paramsOrBuilder)) {
-        query = paramsOrBuilder;
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
-      } else {
-        throw new RepositoryMethodError(
-          "paramsOrBuilder is neither a QueryBuilder nor a RemoveParams"
-        );
-      }
-
-      const stats = await this.context.source.remove(query);
-
-      return Result.withSuccess(stats);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
@@ -234,8 +144,8 @@ export class BaseRepository<EntityType, DocumentType = unknown>
   }
 }
 
-export const isRepository = <T = unknown>(
+export const isReadRepository = <T = unknown>(
   value: unknown
-): value is BaseRepository<T> => {
+): value is ReadRepository<T> => {
   return typeof value === "object" && Object.hasOwn(value, "context");
-};
+}; 
