@@ -10,15 +10,15 @@ SoapJS is a framework-agnostic toolkit that brings enterprise architecture patte
 
 ### Key Benefits
 
-- **🏗️ Clean Architecture** - DDD, CQRS, Event Sourcing out of the box
-- **🔧 Framework Agnostic** - Works with Express, NestJS, Fastify, and more
-- **🗄️ Database Agnostic** - MongoDB, PostgreSQL, MySQL, Redis support
-- **🔍 Type-Safe** - Full TypeScript support with generics
-- **⚡ Real-Time Ready** - WebSocket and event-driven patterns
-- **📡 Event-Driven** - Built-in event bus and messaging patterns
-- **🛡️ Enterprise Features** - Security, audit logging, transaction management
+- **Clean Architecture** - DDD, CQRS, Event Sourcing out of the box
+- **Framework Agnostic** - Works with Express, NestJS, Fastify, and more
+- **Database Agnostic** - MongoDB, PostgreSQL, MySQL, Redis support
+- **Type-Safe** - Full TypeScript support with generics
+- **Real-Time Ready** - WebSocket and event-driven patterns
+- **Event-Driven** - Built-in event bus and messaging patterns
+- **Enterprise Features** - Security, audit logging, transaction management
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -38,8 +38,7 @@ import {
 } from '@soapjs/soap';
 
 // Define your domain entity
-class User implements Entity {
-  readonly id: number;
+interface User extends Entity {
   readonly name: string;
   readonly email: string;
   readonly age: number;
@@ -209,7 +208,7 @@ SoapJS is designed for applications that need:
 
 ## Current Status
 
-### ** Ready to Use**
+### **Ready to Use**
 - **Core Framework** - Complete Clean Architecture implementation
 - **CQRS Pattern** - Full command/query separation with event sourcing
 - **Repository Pattern** - Base classes for custom implementations
@@ -222,7 +221,7 @@ SoapJS is designed for applications that need:
 - **Validation** - Request/response validation
 - **Error Handling** - Consistent error management
 
-### ** In Development**
+### **In Development**
 - **Framework Integrations** - Express, NestJS, Fastify adapters
 - **Database Adapters** - MongoDB, PostgreSQL, MySQL, Redis connectors
 - **Event Bus Adapters** - RabbitMQ, Kafka, AWS SQS integrations
