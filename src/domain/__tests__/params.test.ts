@@ -22,6 +22,9 @@ describe("Helper Functions", () => {
       max: "field5",
       count: "field6",
       where: new Where(),
+      limit: 10,
+      having: { count: { $gte: 5 } },
+      offset: 0,
     };
     expect(AggregationParams.isAggregationParams(validParams)).toBe(true);
   });
@@ -40,6 +43,7 @@ describe("Helper Functions", () => {
       offset: 0,
       sort: {},
       where: new Where(),
+      projection: { name: 1, email: 1 },
     };
     expect(FindParams.isFindParams(validParams)).toBe(true);
   });
@@ -73,6 +77,9 @@ describe("AggregationParams class", () => {
       max: "price",
       count: "id",
       where: new Where(),
+      limit: 10,
+      having: { count: { $gte: 5 } },
+      offset: 0,
     };
     const aggregationParams = AggregationParams.create(options);
     expect(aggregationParams.groupBy).toEqual(options.groupBy);
@@ -84,6 +91,9 @@ describe("AggregationParams class", () => {
     expect(aggregationParams.max).toEqual(options.max);
     expect(aggregationParams.count).toEqual(options.count);
     expect(aggregationParams.where).toEqual(options.where);
+    expect(aggregationParams.limit).toEqual(options.limit);
+    expect(aggregationParams.having).toEqual(options.having);
+    expect(aggregationParams.offset).toEqual(options.offset);
   });
 
   test("should create a new instance of AggregationParams with provided parameters", () => {
@@ -96,6 +106,9 @@ describe("AggregationParams class", () => {
     const max = "price";
     const count = "id";
     const where = new Where();
+    const limit = 10;
+    const having = { count: { $gte: 5 } };
+    const offset = 0;
 
     const aggregationParams = new AggregationParams(
       groupBy,
@@ -106,7 +119,10 @@ describe("AggregationParams class", () => {
       min,
       max,
       count,
-      where
+      where,
+      limit,
+      having,
+      offset
     );
 
     expect(aggregationParams.groupBy).toEqual(groupBy);
@@ -118,6 +134,9 @@ describe("AggregationParams class", () => {
     expect(aggregationParams.max).toEqual(max);
     expect(aggregationParams.count).toEqual(count);
     expect(aggregationParams.where).toEqual(where);
+    expect(aggregationParams.limit).toEqual(limit);
+    expect(aggregationParams.having).toEqual(having);
+    expect(aggregationParams.offset).toEqual(offset);
   });
 });
 
@@ -152,12 +171,14 @@ describe("FindParams class", () => {
       offset: 5,
       sort: { field1: 1, field2: -1 },
       where: new Where(),
+      projection: { name: 1, email: 1 },
     };
     const findParams = FindParams.create(options);
     expect(findParams.limit).toEqual(options.limit);
     expect(findParams.offset).toEqual(options.offset);
     expect(findParams.sort).toEqual(options.sort);
     expect(findParams.where).toEqual(options.where);
+    expect(findParams.projection).toEqual(options.projection);
   });
 
   test("should create a new instance of FindParams with provided parameters", () => {
@@ -165,13 +186,15 @@ describe("FindParams class", () => {
     const offset = 5;
     const sort: Sort = { field1: 1, field2: -1 };
     const where = new Where();
+    const projection = { name: 1, email: 1 };
 
-    const findParams = new FindParams(limit, offset, sort, where);
+    const findParams = new FindParams(limit, offset, sort, where, projection);
 
     expect(findParams.limit).toEqual(limit);
     expect(findParams.offset).toEqual(offset);
     expect(findParams.sort).toEqual(sort);
     expect(findParams.where).toEqual(where);
+    expect(findParams.projection).toEqual(projection);
   });
 });
 

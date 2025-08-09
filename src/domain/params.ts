@@ -24,7 +24,10 @@ export class AggregationParams {
       (obj.min === undefined || typeof obj.min === "string") &&
       (obj.max === undefined || typeof obj.max === "string") &&
       (obj.count === undefined || typeof obj.count === "string") &&
-      (obj.where === undefined || typeof obj.where === "object")
+      (obj.where === undefined || typeof obj.where === "object") &&
+      (obj.limit === undefined || typeof obj.limit === "number") &&
+      (obj.having === undefined || typeof obj.having === "object") &&
+      (obj.offset === undefined || typeof obj.offset === "number")
     );
   }
 
@@ -41,6 +44,9 @@ export class AggregationParams {
    * @param {string} options.max - The field to calculate the maximum value.
    * @param {string} options.count - The field to count.
    * @param {Where} options.where - The where clause.
+   * @param {number} options.limit - The limit of results to retrieve.
+   * @param {object} options.having - The having clause for filtering after grouping.
+   * @param {number} options.offset - The offset of results to skip.
    * @returns {AggregationParams} A new instance of AggregationParams.
    */
   public static create(options: {
@@ -53,8 +59,11 @@ export class AggregationParams {
     max?: string;
     count?: string;
     where?: Where;
+    limit?: number;
+    having?: object;
+    offset?: number;
   }): AggregationParams {
-    const { groupBy, filterBy, sort, sum, average, min, max, count, where } =
+    const { groupBy, filterBy, sort, sum, average, min, max, count, where, limit, having, offset } =
       options;
     return new AggregationParams(
       groupBy,
@@ -65,7 +74,10 @@ export class AggregationParams {
       min,
       max,
       count,
-      where
+      where,
+      limit,
+      having,
+      offset
     );
   }
 
@@ -80,6 +92,9 @@ export class AggregationParams {
    * @param {string} [max] - The field to calculate the maximum value.
    * @param {string} [count] - The field to count.
    * @param {Where} [where] - The where clause.
+   * @param {number} [limit] - The limit of results to retrieve.
+   * @param {object} [having] - The having clause for filtering after grouping.
+   * @param {number} [offset] - The offset of results to skip.
    */
   constructor(
     public readonly groupBy?: string[],
@@ -90,7 +105,10 @@ export class AggregationParams {
     public readonly min?: string,
     public readonly max?: string,
     public readonly count?: string,
-    public readonly where?: Where
+    public readonly where?: Where,
+    public readonly limit?: number,
+    public readonly having?: object,
+    public readonly offset?: number
   ) {}
 }
 
@@ -150,7 +168,8 @@ export class FindParams {
       (obj.limit === undefined || typeof obj.limit === "number") &&
       (obj.offset === undefined || typeof obj.offset === "number") &&
       (obj.sort === undefined || typeof obj.sort === "object") &&
-      (obj.where === undefined || typeof obj.where === "object")
+      (obj.where === undefined || typeof obj.where === "object") &&
+      (obj.projection === undefined || typeof obj.projection === "object")
     );
   }
   /**
@@ -161,6 +180,7 @@ export class FindParams {
    * @param {number} options.offset - The offset of results to skip.
    * @param {Sort} options.sort - The sorting criteria.
    * @param {Where} options.where - The where clause.
+   * @param {object} options.projection - The projection to apply.
    * @returns {FindParams} A new instance of FindParams.
    */
   public static create(options: {
@@ -168,9 +188,10 @@ export class FindParams {
     offset?: number;
     sort?: Sort;
     where?: Where;
+    projection?: object;
   }): FindParams {
-    const { limit, sort, offset, where } = options || {};
-    return new FindParams(limit, offset, sort, where);
+    const { limit, sort, offset, where, projection } = options || {};
+    return new FindParams(limit, offset, sort, where, projection);
   }
   /**
    * Constructs a new instance of FindParams.
@@ -178,12 +199,14 @@ export class FindParams {
    * @param {number} [offset] - The offset of results to skip.
    * @param {Sort} [sort] - The sorting criteria.
    * @param {Where} [where] - The where clause.
+   * @param {object} [projection] - The projection to apply.
    */
   constructor(
     public readonly limit?: number,
     public readonly offset?: number,
     public readonly sort?: Sort,
-    public readonly where?: Where
+    public readonly where?: Where,
+    public readonly projection?: object
   ) {}
 }
 
