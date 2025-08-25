@@ -12,7 +12,11 @@ export type WhereOperator =
   | "lte"
   | "in"
   | "nin"
-  | "like";
+  | "like"
+  | "json_extract"
+  | "full_text_search"
+  | "array_contains"
+  | "text_search";
 export type LogicalOperator = "and" | "or";
 
 /**
@@ -299,6 +303,38 @@ export class Where {
 
   like(value: string): Where {
     this.addCondition("like", value);
+    return this;
+  }
+
+  /**
+   * JSON extract operation
+   */
+  jsonExtract(path: string, value: any): Where {
+    this.addCondition("json_extract", { path, value });
+    return this;
+  }
+
+  /**
+   * Full-text search operation
+   */
+  fullTextSearch(searchTerm: string): Where {
+    this.addCondition("full_text_search", searchTerm);
+    return this;
+  }
+
+  /**
+   * Array contains operation
+   */
+  arrayContains(values: any[]): Where {
+    this.addCondition("array_contains", values);
+    return this;
+  }
+
+  /**
+   * Text search operation
+   */
+  textSearch(searchTerm: string): Where {
+    this.addCondition("text_search", searchTerm);
     return this;
   }
 

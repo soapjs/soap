@@ -37,8 +37,9 @@ describe("FieldResolver", () => {
 
   it("should resolve the correct database field name and type from a domain field name", () => {
     const result = resolver.resolveDatabaseField("domainId");
-    expect(result?.name).toBe("db_id");
+    expect(result?.name).toBe("domainId");
     expect(result?.type).toBe("ObjectId");
+    expect(result?.modelFieldName).toBe("db_id");
   });
 
   it("should return undefined if the domain field name does not exist", () => {

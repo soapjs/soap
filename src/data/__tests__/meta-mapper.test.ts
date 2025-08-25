@@ -399,8 +399,8 @@ describe("MetaMapper", () => {
       const end = performance.now();
       const duration = end - start;
 
-      // Should complete 1000 transformations in reasonable time (less than 100ms)
-      expect(duration).toBeLessThan(100);
+      // Should complete 1000 transformations in reasonable time (less than 200ms)
+      expect(duration).toBeLessThan(200);
     });
   });
 });

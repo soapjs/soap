@@ -15,6 +15,7 @@ import { TransformersMap } from "./property-transformer";
  */
 export class MetaMapper<EntityType, ModelType> implements Mapper<EntityType, ModelType> {
   private modelPropertyResolver: PropertyResolver<ModelType>;
+  private fieldMappings: Map<string, PropertyInfo & { domainName: string }> = new Map();
   
   constructor(
     entityClass: ConstructorOf<EntityType>,
@@ -23,13 +24,24 @@ export class MetaMapper<EntityType, ModelType> implements Mapper<EntityType, Mod
   ) {
     // TODO: think about PropertyResolver for entityClass
     this.modelPropertyResolver = new PropertyResolver(modelClass);
+    this.initializeFieldMappings();
+  }
+
+  private initializeFieldMappings(): void {
+    const mappings = this.modelPropertyResolver.getAllPropertyMappings();
+    for (const mapping of mappings) {
+      this.fieldMappings.set(mapping.modelFieldName, {
+        ...mapping,
+        domainName: mapping.domainFieldName
+      });
+    }
   }
 
   toEntity(model: ModelType, ...args: any[]): EntityType {
     const entity = {} as EntityType;
     
     for (const [modelKey, value] of Object.entries(model as object)) {
-      const fieldInfo = this.getFieldInfoByModelKey(modelKey);
+      const fieldInfo = this.fieldMappings.get(modelKey);
       
       if (fieldInfo) {
         const domainKey = fieldInfo.domainName;
@@ -76,13 +88,6 @@ export class MetaMapper<EntityType, ModelType> implements Mapper<EntityType, Mod
   }
 
   private getFieldInfoByModelKey(modelKey: string): PropertyInfo & { domainName: string } | undefined {
-    const fieldInfo = this.modelPropertyResolver.resolveByModelField(modelKey);
-    if (fieldInfo) {
-      return {
-        ...fieldInfo,
-        domainName: fieldInfo.domainFieldName
-      };
-    }
-    return undefined;
+    return this.fieldMappings.get(modelKey);
   }
 }

@@ -75,6 +75,7 @@ export const EntityProperty = (
  */
 export class PropertyResolver<T> {
   private instance: T;
+  private cachedMappings: Array<PropertyInfo & { modelFieldName: string; domainFieldName: string }> | null = null;
 
   constructor(modelClass: new () => T) {
     this.instance = new modelClass();
@@ -87,16 +88,8 @@ export class PropertyResolver<T> {
    * @returns {PropertyInfo & { modelFieldName: string } | undefined} - The complete property info if found, otherwise undefined.
    */
   resolveDatabaseField(domainField: string): (PropertyInfo & { modelFieldName: string }) | undefined {
-    for (const key of Reflect.ownKeys(this.instance as object)) {
-      const metadata = Reflect.getMetadata("entityProperty", this.instance, key);
-      if (metadata?.name === domainField) {
-        return { 
-          ...metadata,
-          modelFieldName: key as string 
-        };
-      }
-    }
-    return undefined;
+    const mappings = this.getAllPropertyMappings();
+    return mappings.find(mapping => mapping.domainFieldName === domainField);
   }
 
   /**
@@ -105,6 +98,10 @@ export class PropertyResolver<T> {
    * @returns {Array<PropertyInfo & { modelFieldName: string, domainFieldName: string }>} - Array of all property mappings.
    */
   getAllPropertyMappings(): Array<PropertyInfo & { modelFieldName: string; domainFieldName: string }> {
+    if (this.cachedMappings) {
+      return this.cachedMappings;
+    }
+    
     const mappings: Array<PropertyInfo & { modelFieldName: string; domainFieldName: string }> = [];
     
     for (const key of Reflect.ownKeys(this.instance as object)) {
@@ -118,6 +115,7 @@ export class PropertyResolver<T> {
       }
     }
     
+    this.cachedMappings = mappings;
     return mappings;
   }
 
@@ -128,14 +126,8 @@ export class PropertyResolver<T> {
    * @returns {PropertyInfo & { domainFieldName: string } | undefined} - The property info if found, otherwise undefined.
    */
   resolveByModelField(modelFieldName: string): (PropertyInfo & { domainFieldName: string }) | undefined {
-    const metadata = Reflect.getMetadata("entityProperty", this.instance, modelFieldName);
-    if (metadata) {
-      return {
-        ...metadata,
-        domainFieldName: metadata.name
-      };
-    }
-    return undefined;
+    const mappings = this.getAllPropertyMappings();
+    return mappings.find(mapping => mapping.modelFieldName === modelFieldName);
   }
 }
 
