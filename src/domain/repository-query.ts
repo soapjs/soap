@@ -2,16 +2,16 @@
 import { DbQuery, AnyObject } from "./types";
 
 /**
- * A class representing a query builder.
+ * A class representing a repository query builder.
  * @template QueryType - The type of query.
  */
-export class QueryBuilder<QueryType = DbQuery> {
+export abstract class RepositoryQuery<QueryType = DbQuery> {
   /**
-   * Checks if an object conforms to the QueryBuilder structure.
+   * Checks if an object conforms to the RepositoryQuery structure.
    * @param {any} obj - The object to check.
-   * @returns {boolean} True if the object is a QueryBuilder, false otherwise.
+   * @returns {boolean} True if the object is a RepositoryQuery, false otherwise.
    */
-  static isQueryBuilder(obj: any): obj is QueryBuilder {
+  static isQueryBuilder(obj: any): obj is RepositoryQuery {
     return (
       obj &&
       typeof obj.with === "function" &&
@@ -29,9 +29,9 @@ export class QueryBuilder<QueryType = DbQuery> {
   /**
    * Sets the arguments for the query.
    * @param {AnyObject} args - The arguments for the query.
-   * @returns {QueryBuilder<QueryType>} - The updated query builder instance.
+   * @returns {RepositoryQuery<QueryType>} - The updated query builder instance.
    */
-  public with(args: AnyObject): QueryBuilder<QueryType> {
+  public with(args: AnyObject): RepositoryQuery<QueryType> {
     Object.keys(args).forEach((key) => {
       this.args[key] = args[key];
     });
@@ -44,7 +44,5 @@ export class QueryBuilder<QueryType = DbQuery> {
    * @throws {Error} - This method is not implemented.
    * @returns {QueryType} - The built query.
    */
-  public build(): QueryType {
-    throw new Error("Method not implemented.");
-  }
+  abstract build(): QueryType;
 }

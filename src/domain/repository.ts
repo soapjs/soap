@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { QueryBuilder } from "./query-builder";
+import { RepositoryQuery } from "./repository-query";
 import { Result } from "../common/result";
 import { RemoveStats, UpdateStats, DbQuery } from "./types";
 import { Mapper } from "../data/mapper";
@@ -20,21 +20,21 @@ export abstract class ReadOnlyRepository<EntityType = unknown> {
   /**
    * Retrieves the count of entities based on the provided parameters or query builder.
    * @interface
-   * @param {CountParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for counting entities.
+   * @param {CountParams | RepositoryQuery} paramsOrQuery - The parameters or query builder for counting entities.
    * @returns {Promise<Result<number>>} A promise that resolves to the count of entities.
    */
   abstract count(
-    paramsOrBuilder?: CountParams | QueryBuilder
+    paramsOrQuery?: CountParams | RepositoryQuery
   ): Promise<Result<number>>;
 
   /**
    * Finds entities based on the provided parameters or query builder.
    * @interface
-   * @param {FindParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for finding entities.
+   * @param {FindParams | RepositoryQuery} paramsOrQuery - The parameters or query builder for finding entities.
    * @returns {Promise<Result<EntityType[]>>} A promise that resolves to an array of found entities.
    */
   abstract find(
-    paramsOrBuilder?: FindParams | QueryBuilder
+    paramsOrQuery?: FindParams | RepositoryQuery
   ): Promise<Result<EntityType[]>>;
 }
 
@@ -51,7 +51,7 @@ export abstract class Repository<
   /**
    * Executes an aggregation operation on the data source.
    *
-   * @param {AggregationParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the aggregation operation.
+   * @param {AggregationParams | RepositoryQuery} paramsOrQuery The parameters or RepositoryQuery for the aggregation operation.
    * @param {Mapper<ResultType, AggregationType>?} mapper The Mapper used for ResultType-AggregationType transformations (optional).
    *
    * @returns {Promise<Result<ResultType, Error>>} The result of the aggregation operation.
@@ -60,18 +60,18 @@ export abstract class Repository<
     ResultType = EntityType | EntityType[],
     AggregationType = DocumentType
   >(
-    paramsOrBuilder: AggregationParams | QueryBuilder,
+    paramsOrQuery: AggregationParams | RepositoryQuery,
     mapper?: Mapper<ResultType, AggregationType>
   ): Promise<Result<ResultType>>;
 
   /**
    * Updates entities based on the provided parameters or query builder.
    * @abstract
-   * @param {UpdateParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for updating entities.
+   * @param {UpdateParams | RepositoryQuery} paramsOrQuery - The parameters or query builder for updating entities.
    * @returns {Promise<Result<UpdateStats>>} A promise that resolves to the update statistics.
    */
   abstract update(
-    paramsOrBuilder: UpdateParams | QueryBuilder
+    paramsOrQuery: UpdateParams | RepositoryQuery
   ): Promise<Result<UpdateStats>>;
 
   /**
@@ -85,10 +85,10 @@ export abstract class Repository<
   /**
    * Removes entities based on the provided parameters or query builder.
    * @abstract
-   * @param {RemoveParams | QueryBuilder} paramsOrBuilder - The parameters or query builder for removing entities.
+   * @param {RemoveParams | RepositoryQuery} paramsOrQuery - The parameters or query builder for removing entities.
    * @returns {Promise<Result<RemoveStats>>} A promise that resolves to the remove statistics.
    */
   abstract remove(
-    paramsOrBuilder: RemoveParams | QueryBuilder
+    paramsOrQuery: RemoveParams | RepositoryQuery
   ): Promise<Result<RemoveStats>>;
 }

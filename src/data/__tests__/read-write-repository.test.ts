@@ -2,12 +2,12 @@ import { DatabaseContext } from "../repository-data-contexts";
 import { Source } from "../source";
 import { Result } from "../../common/result";
 import { ReadWriteRepository } from "../read-write-repository";
-import { QueryBuilder } from "../../domain/query-builder";
+import { RepositoryQuery } from "../../domain/repository-query";
 import { FindParams, CountParams, AggregationParams, UpdateParams, RemoveParams, UpdateMethod } from "../../domain/params";
 import { Where } from "../../domain/where";
 import { UpdateStats, RemoveStats } from "../../domain/types";
 
-class MockQueryBuilder extends QueryBuilder {
+class MockQueryBuilder extends RepositoryQuery {
   build() {
     return "";
   }

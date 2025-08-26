@@ -3,7 +3,7 @@
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Basic QueryBuilder Class](#basic-querybuilder-class)
+2. [Basic RepositoryQuery Class](#basic-querybuilder-class)
 3. [Usage in Repositories](#usage-in-repositories)
 4. [Implementation Examples](#implementation-examples)
 5. [MongoDB Integration](#mongodb-integration)
@@ -11,7 +11,7 @@
 
 ## Overview
 
-`QueryBuilder` in SoapJS is an abstract base class that enables building complex queries in a type-safe and flexible manner. It is used by repositories to construct queries specific to different databases.
+`RepositoryQuery` in SoapJS is an abstract base class that enables building complex queries in a type-safe and flexible manner. It is used by repositories to construct queries specific to different databases.
 
 ### Key Features
 
@@ -21,18 +21,18 @@
 - **Flexibility** - Ability to implement for different databases
 - **Integration** - Works with repositories and Where system
 
-## Basic QueryBuilder Class
+## Basic RepositoryQuery Class
 
 ### Structure
 
 ```typescript
-import { QueryBuilder } from '@soapjs/soap';
+import { RepositoryQuery } from '@soapjs/soap';
 import { DbQuery, AnyObject } from '@soapjs/soap';
 
-export class QueryBuilder<QueryType = DbQuery> {
+export class RepositoryQuery<QueryType = DbQuery> {
   protected args: AnyObject = {};
 
-  public with(args: AnyObject): QueryBuilder<QueryType> {
+  public with(args: AnyObject): RepositoryQuery<QueryType> {
     Object.keys(args).forEach((key) => {
       this.args[key] = args[key];
     });
@@ -43,7 +43,7 @@ export class QueryBuilder<QueryType = DbQuery> {
     throw new Error("Method not implemented.");
   }
 
-  static isQueryBuilder(obj: any): obj is QueryBuilder {
+  static isQueryBuilder(obj: any): obj is RepositoryQuery {
     return (
       obj &&
       typeof obj.with === "function" &&
@@ -60,7 +60,7 @@ export class QueryBuilder<QueryType = DbQuery> {
 Adds arguments to the query builder.
 
 ```typescript
-const query = new QueryBuilder()
+const query = new RepositoryQuery()
   .with({ limit: 10, offset: 0 })
   .with({ sort: { createdAt: 'desc' } });
 ```
@@ -69,19 +69,19 @@ const query = new QueryBuilder()
 Builds and returns the final query. Must be implemented in inheriting classes.
 
 #### isQueryBuilder(obj: any)
-Checks if an object is an instance of QueryBuilder.
+Checks if an object is an instance of RepositoryQuery.
 
 ## Usage in Repositories
 
 ### Basic Usage
 
 ```typescript
-import { ReadRepository, QueryBuilder, Where } from '@soapjs/soap';
+import { ReadRepository, RepositoryQuery, Where } from '@soapjs/soap';
 
 const repository = new ReadRepository<User>(context);
 
-// Usage with QueryBuilder
-const query = new QueryBuilder()
+// Usage with RepositoryQuery
+const query = new RepositoryQuery()
   .with({ 
     where: new Where().valueOf('status').isEq('active'),
     limit: 10,
@@ -95,13 +95,13 @@ const result = await repository.find(query);
 ### Usage with Parameters
 
 ```typescript
-import { ReadRepository, QueryBuilder, Where } from '@soapjs/soap';
+import { ReadRepository, RepositoryQuery, Where } from '@soapjs/soap';
 
 const repository = new ReadRepository<User>(context);
 
 // Building query with parameters
 const buildUserQuery = (status: string, limit: number = 10) => {
-  return new QueryBuilder()
+  return new RepositoryQuery()
     .with({ 
       where: new Where().valueOf('status').isEq(status),
       limit,
@@ -117,7 +117,7 @@ const result = await repository.find(buildUserQuery('active', 20));
 ### Simple Query Builder
 
 ```typescript
-import { QueryBuilder, DbQuery } from '@soapjs/soap';
+import { RepositoryQuery, DbQuery } from '@soapjs/soap';
 
 interface SimpleQuery {
   filter: Record<string, any>;
@@ -128,7 +128,7 @@ interface SimpleQuery {
   };
 }
 
-export class SimpleQueryBuilder extends QueryBuilder<SimpleQuery> {
+export class SimpleQueryBuilder extends RepositoryQuery<SimpleQuery> {
   build(): SimpleQuery {
     const { where, limit, offset, sort } = this.args;
     
@@ -147,7 +147,7 @@ export class SimpleQueryBuilder extends QueryBuilder<SimpleQuery> {
 ### Advanced Query Builder
 
 ```typescript
-import { QueryBuilder, DbQuery, Where } from '@soapjs/soap';
+import { RepositoryQuery, DbQuery, Where } from '@soapjs/soap';
 
 interface AdvancedQuery {
   filter: Record<string, any>;
@@ -163,7 +163,7 @@ interface AdvancedQuery {
   };
 }
 
-export class AdvancedQueryBuilder extends QueryBuilder<AdvancedQuery> {
+export class AdvancedQueryBuilder extends RepositoryQuery<AdvancedQuery> {
   build(): AdvancedQuery {
     const { 
       where, 
@@ -241,10 +241,10 @@ const mongoQuery = queryFactory.createFindQuery(findParams);
 ### MongoDB Implementation Example
 
 ```typescript
-import { QueryBuilder } from '@soapjs/soap';
+import { RepositoryQuery } from '@soapjs/soap';
 import { MongoFindQueryParams } from '@soapjs/soap-mongo';
 
-export class MongoQueryBuilder extends QueryBuilder<MongoFindQueryParams> {
+export class MongoQueryBuilder extends RepositoryQuery<MongoFindQueryParams> {
   build(): MongoFindQueryParams {
     const { where, limit, offset, sort, projection } = this.args;
     
@@ -301,12 +301,12 @@ const result = await repository.find(query);
 ### Usage in ReadRepository
 
 ```typescript
-import { ReadRepository, QueryBuilder, Where } from '@soapjs/soap';
+import { ReadRepository, RepositoryQuery, Where } from '@soapjs/soap';
 
 const repository = new ReadRepository<User>(context);
 
 // Basic query
-const basicQuery = new QueryBuilder()
+const basicQuery = new RepositoryQuery()
   .with({ 
     where: new Where().valueOf('status').isEq('active') 
   });
@@ -314,7 +314,7 @@ const basicQuery = new QueryBuilder()
 const activeUsers = await repository.find(basicQuery);
 
 // Advanced query
-const advancedQuery = new QueryBuilder()
+const advancedQuery = new RepositoryQuery()
   .with({ 
     where: new Where()
       .valueOf('status').isEq('active')
@@ -330,12 +330,12 @@ const paginatedUsers = await repository.find(advancedQuery);
 ### Usage in ReadWriteRepository
 
 ```typescript
-import { ReadWriteRepository, QueryBuilder, Where } from '@soapjs/soap';
+import { ReadWriteRepository, RepositoryQuery, Where } from '@soapjs/soap';
 
 const repository = new ReadWriteRepository<User>(context);
 
 // Update query
-const updateQuery = new QueryBuilder()
+const updateQuery = new RepositoryQuery()
   .with({ 
     where: new Where()
       .valueOf('lastLogin').isLt(new Date('2024-01-01'))
@@ -352,12 +352,12 @@ const result = await repository.update({
 ### Usage with Aggregation
 
 ```typescript
-import { ReadRepository, QueryBuilder, Where } from '@soapjs/soap';
+import { ReadRepository, RepositoryQuery, Where } from '@soapjs/soap';
 
 const repository = new ReadRepository<User>(context);
 
 // Query with aggregation
-const aggregationQuery = new QueryBuilder()
+const aggregationQuery = new RepositoryQuery()
   .with({ 
     where: new Where().valueOf('status').isEq('active'),
     groupBy: ['department'],
@@ -373,7 +373,7 @@ const departmentStats = await repository.aggregate(aggregationQuery);
 
 ```typescript
 // ✅ Good - reusable query builders
-export class UserQueryBuilder extends QueryBuilder {
+export class UserQueryBuilder extends RepositoryQuery {
   static activeUsers(limit?: number) {
     return new UserQueryBuilder()
       .with({ 
@@ -399,7 +399,7 @@ const itUsers = await repository.find(UserQueryBuilder.byDepartment('IT', 20));
 ### 2. Parameter Validation
 
 ```typescript
-export class ValidatedQueryBuilder extends QueryBuilder {
+export class ValidatedQueryBuilder extends RepositoryQuery {
   with(args: AnyObject): ValidatedQueryBuilder {
     // Validate limit
     if (args.limit && (args.limit < 1 || args.limit > 1000)) {
@@ -428,7 +428,7 @@ interface UserQuery {
   };
 }
 
-export class TypedUserQueryBuilder extends QueryBuilder<UserQuery> {
+export class TypedUserQueryBuilder extends RepositoryQuery<UserQuery> {
   build(): UserQuery {
     const { where, limit, offset, sort } = this.args;
     
@@ -447,7 +447,7 @@ export class TypedUserQueryBuilder extends QueryBuilder<UserQuery> {
 ### 4. Fluent API
 
 ```typescript
-export class FluentQueryBuilder extends QueryBuilder {
+export class FluentQueryBuilder extends RepositoryQuery {
   limit(value: number): FluentQueryBuilder {
     return this.with({ limit: value }) as FluentQueryBuilder;
   }
@@ -476,7 +476,7 @@ const query = new FluentQueryBuilder()
 ### 5. Error Handling
 
 ```typescript
-export class SafeQueryBuilder extends QueryBuilder {
+export class SafeQueryBuilder extends RepositoryQuery {
   build(): any {
     try {
       const { where, limit, offset, sort } = this.args;
@@ -504,7 +504,7 @@ export class SafeQueryBuilder extends QueryBuilder {
 ### 6. Optimization
 
 ```typescript
-export class OptimizedQueryBuilder extends QueryBuilder {
+export class OptimizedQueryBuilder extends RepositoryQuery {
   build(): any {
     const { where, limit, offset, sort } = this.args;
     
@@ -528,7 +528,7 @@ export class OptimizedQueryBuilder extends QueryBuilder {
 
 ## Summary
 
-`QueryBuilder` in SoapJS is a powerful tool for building complex queries in a type-safe and flexible manner. Thanks to its abstract structure, it's possible to create implementations specific to different databases while maintaining a consistent interface.
+`RepositoryQuery` in SoapJS is a powerful tool for building complex queries in a type-safe and flexible manner. Thanks to its abstract structure, it's possible to create implementations specific to different databases while maintaining a consistent interface.
 
 Key advantages:
 - **Abstraction** - Ability to implement for different databases

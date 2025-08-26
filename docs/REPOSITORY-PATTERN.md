@@ -823,7 +823,7 @@ if (result.isSuccess()) {
 ### 9. Use Query Builders
 
 ```typescript
-const query = new QueryBuilder()
+const query = new RepositoryQuery()
   .where('status', 'active')
   .where('createdAt', '>=', new Date('2024-01-01'))
   .orderBy('createdAt', 'desc')

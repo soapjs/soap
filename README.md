@@ -281,6 +281,67 @@ const activeUsers = await userRepo.find(
 );
 ```
 
+```typescript
+export class AddSpecificCustomerQuery extends RepositoryQuery<CustomerDbQuery> {
+  constructor(customerData: CustomerInput) {
+    super();
+    this.with({
+      entity: 'customer',
+      operation: 'add',
+      data: customerData,
+      businessRules: {
+        validateEmail: true,
+        checkDuplicate: true,
+        setDefaultRole: 'basic'
+      }
+    });
+  }
+
+  build(): CustomerDbQuery {
+    return {
+      type: 'insert',
+      collection: 'customers',
+      data: this.args.data,
+      validation: this.args.businessRules
+    };
+  }
+}
+
+export class FindActivePremiumUsersQuery extends RepositoryQuery<UserDbQuery> {
+  constructor(limit: number = 100) {
+    super();
+    this.with({
+      entity: 'user',
+      operation: 'find',
+      filters: {
+        status: 'active',
+        subscription: 'premium'
+      },
+      limit,
+      include: ['profile', 'subscription']
+    });
+  }
+
+  build(): UserDbQuery {
+    return {
+      type: 'find',
+      collection: 'users',
+      where: this.args.filters,
+      limit: this.args.limit,
+      populate: this.args.include
+    };
+  }
+}
+
+//
+
+const addCustomerQuery = new AddSpecificCustomerQuery(customerData);
+const findUsersQuery = new FindActivePremiumUsersQuery(50);
+
+await customerRepo.add(addCustomerQuery);
+await userRepo.find(findUsersQuery);
+```
+
 ### **5. Create Custom Repository Implementation**
 ```typescript
 import { ReadWriteRepository, DatabaseContext } from '@soapjs/soap';

@@ -6,9 +6,9 @@ import { Result } from "../../common/result";
 import { Failure } from "../../common/failure";
 import { UpdateStats, RemoveStats } from "../../domain/types";
 import { ReadWriteRepository } from "../read-write-repository";
-import { QueryBuilder } from "../../domain/query-builder";
+import { RepositoryQuery } from "../../domain/repository-query";
 
-class MockQueryBuilder extends QueryBuilder {
+class MockQueryBuilder extends RepositoryQuery {
   build() {
     return "";
   }

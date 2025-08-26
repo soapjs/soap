@@ -1,5 +1,5 @@
 import { Failure } from "../common/failure";
-import { QueryBuilder } from "../domain/query-builder";
+import { RepositoryQuery } from "../domain/repository-query";
 import { Repository } from "../domain/repository";
 import { Result } from "../common/result";
 import { UpdateStats, RemoveStats } from "../domain/types";
@@ -42,27 +42,27 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
   /**
    * Updates entities in the data source.
    *
-   * @param {UpdateParams<Partial<EntityType>> | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the update operation.
+   * @param {UpdateParams<Partial<EntityType>> | RepositoryQuery} paramsOrQuery The parameters or RepositoryQuery for the update operation.
    *
    * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
    */
   public async update(
-    paramsOrBuilder: UpdateParams<Partial<EntityType>> | QueryBuilder
+    paramsOrQuery: UpdateParams<Partial<EntityType>> | RepositoryQuery
   ): Promise<Result<UpdateStats>> {
     try {
       let query: any;
 
-      if (UpdateParams.isUpdateParams(paramsOrBuilder)) {
-        const { updates, ...rest } = paramsOrBuilder;
+      if (UpdateParams.isUpdateParams(paramsOrQuery)) {
+        const { updates, ...rest } = paramsOrQuery;
         const documents = updates.map((update) =>
           this.context.mapper.toModel(update as EntityType)
         );
         query = { updates: documents, ...rest };
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
+        query = paramsOrQuery.build();
       } else {
         throw new RepositoryMethodError(
-          "paramsOrBuilder is neither a QueryBuilder nor a UpdateParams"
+          "paramsOrQuery is neither a RepositoryQuery nor a UpdateParams"
         );
       }
 
@@ -100,23 +100,23 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
   /**
    * Removes entities from the data source.
    *
-   * @param {RemoveParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the remove operation.
+   * @param {RemoveParams | RepositoryQuery} paramsOrQuery The parameters or RepositoryQuery for the remove operation.
    *
    * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
    */
   public async remove(
-    paramsOrBuilder: RemoveParams | QueryBuilder
+    paramsOrQuery: RemoveParams | RepositoryQuery
   ): Promise<Result<RemoveStats>> {
     try {
       let query: any;
 
-      if (RemoveParams.isRemoveParams(paramsOrBuilder)) {
-        query = paramsOrBuilder;
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
+      if (RemoveParams.isRemoveParams(paramsOrQuery)) {
+        query = paramsOrQuery;
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
+        query = paramsOrQuery.build();
       } else {
         throw new RepositoryMethodError(
-          "paramsOrBuilder is neither a QueryBuilder nor a RemoveParams"
+          "paramsOrQuery is neither a RepositoryQuery nor a RemoveParams"
         );
       }
 

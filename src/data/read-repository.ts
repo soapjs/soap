@@ -1,5 +1,5 @@
 import { Failure } from "../common/failure";
-import { QueryBuilder } from "../domain/query-builder";
+import { RepositoryQuery } from "../domain/repository-query";
 import { ReadOnlyRepository } from "../domain/repository";
 import { Result } from "../common/result";
 import { Mapper } from "./mapper";
@@ -40,7 +40,7 @@ export class ReadRepository<EntityType, DocumentType = unknown>
   /**
    * Executes an aggregation operation on the data source.
    *
-   * @param {AggregationParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the aggregation operation.
+   * @param {AggregationParams | RepositoryQuery} paramsOrQuery The parameters or RepositoryQuery for the aggregation operation.
    * @param {Mapper<ResultType, AggregationType>?} mapper The Mapper used for ResultType-AggregationType transformations (optional).
    *
    * @returns {Promise<Result<ResultType>>} The result of the aggregation operation.
@@ -49,19 +49,19 @@ export class ReadRepository<EntityType, DocumentType = unknown>
     ResultType = EntityType | EntityType[],
     AggregationType = DocumentType
   >(
-    paramsOrBuilder: AggregationParams | QueryBuilder,
+    paramsOrQuery: AggregationParams | RepositoryQuery,
     mapper?: Mapper<ResultType, AggregationType>
   ): Promise<Result<ResultType>> {
     try {
       let query: DbQuery;
 
-      if (AggregationParams.isAggregationParams(paramsOrBuilder)) {
-        query = paramsOrBuilder;
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
+      if (AggregationParams.isAggregationParams(paramsOrQuery)) {
+        query = paramsOrQuery;
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
+        query = paramsOrQuery.build();
       } else {
         throw new RepositoryMethodError(
-          "paramsOrBuilder is neither a QueryBuilder nor a AggregationParams"
+          "paramsOrQuery is neither a RepositoryQuery nor a AggregationParams"
         );
       }
 
@@ -87,20 +87,20 @@ export class ReadRepository<EntityType, DocumentType = unknown>
   /**
    * Counts the entities in the data source.
    *
-   * @param {CountParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the count operation (optional).
+   * @param {CountParams | RepositoryQuery} paramsOrQuery The parameters or RepositoryQuery for the count operation (optional).
    *
    * @returns {Promise<Result<number>>} The result of the count operation, containing the number of entities or an error.
    */
   public async count(
-    paramsOrBuilder?: CountParams | QueryBuilder
+    paramsOrQuery?: CountParams | RepositoryQuery
   ): Promise<Result<number>> {
     try {
       let query: DbQuery;
 
-      if (CountParams.isCountParams(paramsOrBuilder)) {
-        query = paramsOrBuilder;
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
+      if (CountParams.isCountParams(paramsOrQuery)) {
+        query = paramsOrQuery;
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
+        query = paramsOrQuery.build();
       } else {
         query = {};
       }
@@ -116,19 +116,19 @@ export class ReadRepository<EntityType, DocumentType = unknown>
   /**
    * Finds entities in the data source.
    *
-   * @param {FindParams | QueryBuilder} paramsOrBuilder The parameters or QueryBuilder for the find operation (optional).
+   * @param {FindParams | RepositoryQuery} paramsOrQuery The parameters or RepositoryQuery for the find operation (optional).
    *
    * @returns {Promise<Result<EntityType[]>>} The result of the find operation, containing the found entities or an error.
    */
   public async find(
-    paramsOrBuilder?: FindParams | QueryBuilder
+    paramsOrQuery?: FindParams | RepositoryQuery
   ): Promise<Result<EntityType[]>> {
     try {
       let query: DbQuery;
-      if (FindParams.isFindParams(paramsOrBuilder)) {
-        query = paramsOrBuilder;
-      } else if (QueryBuilder.isQueryBuilder(paramsOrBuilder)) {
-        query = paramsOrBuilder.build();
+      if (FindParams.isFindParams(paramsOrQuery)) {
+        query = paramsOrQuery;
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
+        query = paramsOrQuery.build();
       } else {
         query = {};
       }

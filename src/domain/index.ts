@@ -8,7 +8,7 @@ export * from "./repository";
 export * from "./types";
 export * from "./use-case";
 export * from "./params";
-export * from "./query-builder";
+export * from "./repository-query";
 export * from "./where";
 export * from "./id-type";
 export * from "./decorators";

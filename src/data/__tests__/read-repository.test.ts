@@ -2,10 +2,10 @@ import { DatabaseContext } from "../repository-data-contexts";
 import { Source } from "../source";
 import { Result } from "../../common/result";
 import { ReadRepository } from "../read-repository";
-import { QueryBuilder } from "../../domain/query-builder";
+import { RepositoryQuery } from "../../domain/repository-query";
 import { FindParams, CountParams, AggregationParams } from "../../domain/params";
 
-class MockQueryBuilder extends QueryBuilder {
+class MockQueryBuilder extends RepositoryQuery {
   build() {
     return "";
   }
