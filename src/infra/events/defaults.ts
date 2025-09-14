@@ -4,6 +4,7 @@ import {
   EventParsingError,
   HandlerExecutionError,
 } from "./errors";
+import { EventBase } from "./event-base";
 import { EventProcessingStrategy } from "./types";
 
 /**
@@ -21,65 +22,53 @@ export class DefaultEventProcessingStrategy<
 > implements EventProcessingStrategy<MessageType, HeadersType>
 {
   /**
-   * Processes an event message by validating, parsing, and passing it to the handler.
+   * Processes an event message by validating and passing it to the handler.
    *
-   * @param {unknown} message - The raw message received from the event bus.
-   * @param {(payload: MessageType) => Promise<void>} handler - The handler function to process the parsed and validated payload.
+   * @param {EventBase<MessageType, HeadersType>} message - The event message received from the event bus.
+   * @param {(event: EventBase<MessageType, HeadersType>) => Promise<void>} handler - The handler function to process the event.
    * @throws {EventValidationError} If the message fails validation.
-   * @throws {EventParsingError} If the message cannot be parsed.
    * @throws {HandlerExecutionError} If the handler function throws an error during execution.
    * @returns {Promise<void>} A promise that resolves when the message is successfully processed.
    */
   async process(
-    message: unknown,
-    handler: (payload: MessageType) => Promise<void>
+    message: EventBase<MessageType, HeadersType>,
+    handler: (event: EventBase<MessageType, HeadersType>) => Promise<void>
   ): Promise<void> {
     try {
-      // Validate and parse the message
-      const parsedMessage = this.parseMessage(message);
-      this.validateMessage(parsedMessage);
+      // Validate the message
+      this.validateMessage(message);
 
-      // Execute the handler
-      await handler(parsedMessage);
+      // Execute the handler with full event context
+      await handler(message);
     } catch (error) {
       if (error instanceof EventValidationError) {
         throw new EventValidationError(`Validation failed: ${error.message}`);
       } else if (error instanceof EventParsingError) {
         throw new EventParsingError(`Parsing failed: ${error.message}`);
       } else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         throw new HandlerExecutionError(
-          `Handler execution failed: ${error.message}`
+          `Handler execution failed: ${errorMessage}`
         );
       }
     }
   }
 
-  /**
-   * Parses the raw message into the expected payload format.
-   *
-   * @private
-   * @param {unknown} message - The raw message received from the event bus.
-   * @throws {EventParsingError} If the message cannot be parsed into the expected format.
-   * @returns {MessageType} The parsed payload.
-   */
-  private parseMessage(message: unknown): MessageType {
-    try {
-      return JSON.parse(message as string) as MessageType;
-    } catch (error) {
-      throw new EventParsingError("Failed to parse message");
-    }
-  }
+
 
   /**
-   * Validates the parsed message to ensure it meets required criteria.
+   * Validates the event message to ensure it meets required criteria.
    *
    * @private
-   * @param {MessageType} message - The parsed message to validate.
+   * @param {EventBase<MessageType, HeadersType>} message - The event message to validate.
    * @throws {EventValidationError} If the message fails validation.
    */
-  private validateMessage(message: MessageType): void {
+  private validateMessage(message: EventBase<MessageType, HeadersType>): void {
     if (!message) {
       throw new EventValidationError("Message validation failed");
+    }
+    if (!message.message) {
+      throw new EventValidationError("Message payload is required");
     }
   }
 }

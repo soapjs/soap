@@ -1,4 +1,6 @@
-import { EventBase, EventBus } from "./types";
+import { EventBase } from "./event-base";
+import { EventBus } from "./event-bus";
+import { ExternalEvent } from "./external-event";
 
 /**
  * Options for configuring the EventDispatcher.
@@ -26,8 +28,8 @@ export interface EventDispatcherOptions {
    * Callbacks for monitoring dispatch operations.
    */
   callbacks?: {
-    onSuccess?: (event: string, payload: unknown) => void;
-    onError?: (event: string, error: Error, payload: unknown) => void;
+    onSuccess?: (externalEvent: ExternalEvent) => void;
+    onError?: (error: Error, externalEvent: ExternalEvent) => void;
     onRetry?: (event: string, attempt: number, error: Error) => void;
   };
   
@@ -44,18 +46,11 @@ export interface EventDispatcherOptions {
   timestampGenerator?: () => string;
 }
 
-export class EventDispatcher<
-  PayloadType = unknown,
-  HeadersType = Record<string, unknown> & {
-    correlation_id: string;
-    timestamp: string;
-  },
-  EventIdType = string
-> {
+export class EventDispatcher {
   private readonly options: Required<EventDispatcherOptions>;
 
   constructor(
-    private readonly eventBus: EventBus<PayloadType, HeadersType, EventIdType>,
+    private readonly eventBus: EventBus<unknown, Record<string, unknown>, string>,
     options: EventDispatcherOptions = {}
   ) {
     this.options = {
@@ -69,55 +64,56 @@ export class EventDispatcher<
   }
 
   /**
-   * Dispatches an event to the event bus.
+   * Dispatches an external event to the event bus.
    * Automatically attaches default headers like correlation ID and timestamp.
    * Includes retry logic and error handling.
    */
-  async dispatch(
-    event: EventIdType,
-    payload: PayloadType,
-    headers: Partial<HeadersType> = {}
-  ): Promise<void> {
+  async dispatch(externalEvent: ExternalEvent): Promise<void> {
     // Validate inputs
-    this.validateDispatchInputs(event, payload, headers);
+    this.validateDispatchInputs(externalEvent);
 
-    const enrichedHeaders: HeadersType = {
-      ...headers,
-      correlation_id: this.options.correlationIdGenerator(),
-      timestamp: this.options.timestampGenerator(),
-    } as HeadersType;
+    const enrichedHeaders: Record<string, unknown> = {
+      eventId: externalEvent.id,
+      eventType: externalEvent.type,
+      correlationId: externalEvent.correlationId,
+      causationId: externalEvent.causationId,
+      source: externalEvent.source,
+      destination: externalEvent.destination,
+      timestamp: externalEvent.timestamp.toISOString(),
+      ...externalEvent.metadata
+    };
 
-    const eventBase: EventBase<PayloadType, HeadersType> = {
-      message: payload,
+    const eventBase: EventBase<unknown, Record<string, unknown>> = {
+      message: externalEvent.data,
       headers: enrichedHeaders,
     };
 
-    await this.dispatchWithRetry(event, eventBase);
+    await this.dispatchWithRetry(eventBase, externalEvent);
   }
 
   /**
    * Dispatches an event with retry logic.
    */
   private async dispatchWithRetry(
-    event: EventIdType,
-    eventBase: EventBase<PayloadType, HeadersType>
+    eventBase: EventBase<unknown, Record<string, unknown>>,
+    externalEvent: ExternalEvent
   ): Promise<void> {
     let lastError: Error;
     
     for (let attempt = 1; attempt <= this.options.maxRetries; attempt++) {
       try {
-        await this.eventBus.publish(event, eventBase);
-        this.options.callbacks.onSuccess?.(event as string, eventBase.message);
+        await this.eventBus.publish(externalEvent.type, eventBase);
+        this.options.callbacks.onSuccess?.(externalEvent);
         return;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         
         if (attempt === this.options.maxRetries) {
-          this.options.callbacks.onError?.(event as string, lastError, eventBase.message);
-          throw new Error(`Failed to dispatch event '${event}' after ${attempt} attempts: ${lastError.message}`);
+          this.options.callbacks.onError?.(lastError, externalEvent);
+          throw new Error(`Failed to dispatch event '${externalEvent.type}' after ${attempt} attempts: ${lastError.message}`);
         }
         
-        this.options.callbacks.onRetry?.(event as string, attempt, lastError);
+        this.options.callbacks.onRetry?.(externalEvent.type, attempt, lastError);
         
         // Calculate delay with optional exponential backoff
         const delay = this.options.exponentialBackoff 
@@ -132,22 +128,21 @@ export class EventDispatcher<
   /**
    * Validates dispatch inputs.
    */
-  private validateDispatchInputs(
-    event: EventIdType,
-    payload: PayloadType,
-    headers: Partial<HeadersType>
-  ): void {
-    if (!event) {
-      throw new Error('Event identifier is required');
+  private validateDispatchInputs(externalEvent: ExternalEvent): void {
+    if (!externalEvent) {
+      throw new Error('External event is required');
     }
     
-    if (payload === undefined || payload === null) {
-      throw new Error('Event payload is required');
+    if (!externalEvent.type) {
+      throw new Error('Event type is required');
     }
     
-    // Validate headers structure if provided
-    if (headers && typeof headers !== 'object') {
-      throw new Error('Headers must be an object');
+    if (!externalEvent.correlationId) {
+      throw new Error('Correlation ID is required');
+    }
+    
+    if (!externalEvent.source) {
+      throw new Error('Event source is required');
     }
   }
 
@@ -167,5 +162,9 @@ export class EventDispatcher<
 }
 
 function generateCorrelationId(): string {
-  return crypto.randomUUID?.() || Math.random().toString(36).substring(2, 15);
+  // Use crypto.randomUUID if available (Node.js 14.17.0+), otherwise fallback to Math.random
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 15);
 }

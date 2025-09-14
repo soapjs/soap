@@ -1,7 +1,7 @@
 import { join } from "path";
 import { Route } from "./route";
 import { RouteAdditionalOptions } from "./types";
-import { RouteIO } from "./route.io";
+import { IO } from "../common";
 
 const normalizePath = (path: string): string => path.replace(/\/+/g, "/");
 
@@ -23,7 +23,7 @@ export class RouteGroup {
   constructor(
     public readonly path: string,
     public readonly options: RouteAdditionalOptions = {},
-    public readonly io?: RouteIO,
+    public readonly io?: IO,
     private _routes: Route[] = []
   ) {}
 

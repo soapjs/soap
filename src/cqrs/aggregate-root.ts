@@ -1,5 +1,5 @@
 import { Entity } from "../domain/entity";
-import { DomainEvent, BaseDomainEvent } from "./event";
+import { DomainEvent, BaseDomainEvent } from "../domain/domain-event";
 
 /**
  * Aggregate Root interface for CQRS pattern
@@ -86,8 +86,7 @@ export abstract class BaseAggregateRoot<TEntity extends Entity<any>>
     
     return new class extends BaseDomainEvent {
       constructor() {
-        super(eventType, aggregateId, version);
-        Object.assign(this, eventData);
+        super(eventType, aggregateId, eventData, version);
       }
     }();
   }

@@ -1431,7 +1431,7 @@ const dbContext = new DatabaseContext(source, mapper, sessions);
 const httpContext = new HttpContext(client, mapper);
 
 // For WebSocket operations
-const wsContext = new WebSocketContext(socket, mapper);
+const wsContext = new SocketContext(socket, mapper);
 ```
 
 #### 3. **Handle Errors Properly**

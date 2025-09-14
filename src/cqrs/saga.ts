@@ -1,6 +1,6 @@
 import { Result } from "../common/result";
 import { Command } from "./command";
-import { DomainEvent } from "./event";
+import { DomainEvent } from "../domain/domain-event";
 
 /**
  * Saga step interface

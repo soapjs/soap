@@ -36,6 +36,8 @@ describe("ReadWriteRepository class", () => {
       getSession: jest.fn(),
       hasSession: jest.fn(),
     },
+    isCacheEnabled: jest.fn().mockReturnValue(false),
+    getCacheKey: jest.fn().mockReturnValue('test-key'),
   };
 
   const repository = new ReadWriteRepository(dataContext);

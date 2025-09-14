@@ -11,8 +11,8 @@ import {
   AnyContext,
   BlockchainContext,
   DatabaseContext,
-  HttpContext,
-  WebSocketContext,
+  WebContext,
+  SocketContext,
 } from "./repository-data-contexts";
 import { RepositoryMethodError } from "../domain/errors";
 import { ReadRepository } from "./read-repository";
@@ -31,8 +31,8 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
   constructor(
     context:
       | DatabaseContext<EntityType, DocumentType>
-      | HttpContext<EntityType, DocumentType>
-      | WebSocketContext<EntityType, DocumentType>
+      | WebContext<EntityType, DocumentType>
+      | SocketContext<EntityType, DocumentType>
       | BlockchainContext<EntityType, DocumentType>
       | AnyContext<EntityType, DocumentType>
   ) {

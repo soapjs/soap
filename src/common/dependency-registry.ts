@@ -4,6 +4,14 @@ export type DependencyEntry<T> = {
   instance: T | null;
   isReady: boolean;
   init?: () => Promise<T>;
+  factory?: () => T;
+  singleton?: boolean;
+};
+
+export type DependencyMetadata = {
+  token: string;
+  singleton?: boolean;
+  factory?: () => any;
 };
 
 /**
@@ -15,11 +23,21 @@ export class DependencyRegistry {
   /**
    * Registers a new dependency.
    */
-  public register<T>(key: string, init?: () => Promise<T>): void {
+  public register<T>(key: string, options?: {
+    init?: () => Promise<T>;
+    factory?: () => T;
+    singleton?: boolean;
+  }): void {
     const dependency = this.dependencies.get(key);
 
     if (dependency?.isReady !== true) {
-      this.dependencies.set(key, { instance: null, isReady: false, init });
+      this.dependencies.set(key, { 
+        instance: null, 
+        isReady: false, 
+        init: options?.init,
+        factory: options?.factory,
+        singleton: options?.singleton ?? true
+      });
     }
   }
 
@@ -46,7 +64,25 @@ export class DependencyRegistry {
    * Retrieves a dependency instance.
    */
   public get<T>(key: string): T | null {
-    return this.dependencies.get(key)?.instance || null;
+    const entry = this.dependencies.get(key);
+    if (!entry) return null;
+
+    // If it's a singleton and already instantiated, return the instance
+    if (entry.singleton && entry.instance) {
+      return entry.instance;
+    }
+
+    // If it has a factory, use it to create a new instance
+    if (entry.factory) {
+      const instance = entry.factory();
+      if (entry.singleton) {
+        entry.instance = instance;
+        entry.isReady = true;
+      }
+      return instance;
+    }
+
+    return entry.instance;
   }
 
   /**

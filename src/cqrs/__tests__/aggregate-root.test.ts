@@ -1,5 +1,5 @@
 import { BaseAggregateRoot, AggregateRoot } from '../aggregate-root';
-import { BaseDomainEvent, DomainEvent } from '../event';
+import { BaseDomainEvent, DomainEvent } from '../../domain/domain-event';
 import { Entity } from '../../domain/entity';
 import { Result } from '../../common/result';
 
@@ -9,13 +9,17 @@ describe('Aggregate Root Pattern', () => {
     value: number;
   }
 
-  class TestEvent extends BaseDomainEvent {
+  class TestEvent extends BaseDomainEvent<{ data: string }> {
     constructor(
-      public readonly data: string,
-      aggregateId?: string,
-      version?: number
+      data: string,
+      aggregateId: string = 'test-aggregate',
+      version: number = 1
     ) {
-      super('TestEvent', aggregateId, version);
+      super('TestEvent', aggregateId, { data }, version);
+    }
+
+    get eventData(): string {
+      return this.data.data;
     }
   }
 
@@ -75,7 +79,7 @@ describe('Aggregate Root Pattern', () => {
       expect(aggregate.uncommittedEvents).toHaveLength(0);
     });
 
-    it('should add domain events to uncommitted events', () => {
+    it('should add internal events to uncommitted events', () => {
       const entity: TestEntity = {
         id: 'test-id',
         name: 'test',
@@ -125,7 +129,7 @@ describe('Aggregate Root Pattern', () => {
       expect((aggregate as any).version).toBe(2);
     });
 
-    it('should create domain events with correct properties', () => {
+    it('should create internal events with correct properties', () => {
       const entity: TestEntity = {
         id: 'test-id',
         name: 'test',
@@ -138,7 +142,7 @@ describe('Aggregate Root Pattern', () => {
       const event = aggregate.uncommittedEvents[0];
       expect(event.aggregateId).toBe('test-id');
       expect(event.version).toBe(0);
-      expect(event.eventType).toBe('TestEvent');
+      expect(event.type).toBe('TestEvent');
     });
   });
 

@@ -16,7 +16,7 @@ describe("DependencyRegistry", () => {
   it("should register a dependency with async initialization", async () => {
     const mockInstance = { foo: "bar" };
 
-    registry.register("AsyncService", async () => mockInstance);
+    registry.register("AsyncService", { init: async () => mockInstance });
     await registry.initializeAll();
 
     expect(registry.get("AsyncService")).toBe(mockInstance);
@@ -27,8 +27,8 @@ describe("DependencyRegistry", () => {
     const mockDB = { connected: true };
     const mockCache = { store: "memory" };
 
-    registry.register("Database", async () => mockDB);
-    registry.register("Cache", async () => mockCache);
+    registry.register("Database", { init: async () => mockDB });
+    registry.register("Cache", { init: async () => mockCache });
 
     await registry.initializeAll();
 
@@ -39,8 +39,10 @@ describe("DependencyRegistry", () => {
   });
 
   it("should handle initialization failures gracefully", async () => {
-    registry.register("FailingService", async () => {
-      throw new Error("Initialization error");
+    registry.register("FailingService", { 
+      init: async () => {
+        throw new Error("Initialization error");
+      }
     });
 
     await expect(registry.initializeAll()).resolves.not.toThrow();
@@ -57,7 +59,7 @@ describe("DependencyRegistry", () => {
   it("should not override an initialized dependency with null", async () => {
     const mockInstance = { value: 42 };
 
-    registry.register("ImmutableService", async () => mockInstance);
+    registry.register("ImmutableService", { init: async () => mockInstance });
     await registry.initializeAll();
 
     registry.register("ImmutableService");

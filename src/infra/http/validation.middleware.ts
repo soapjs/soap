@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ValidationOptions } from "./types";
-import { Middleware } from "./middleware";
+import { Middleware } from "../common/middleware";
 
 /**
  * Represents the result of a validation operation.

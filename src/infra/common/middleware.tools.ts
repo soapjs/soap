@@ -1,5 +1,5 @@
 import { Middleware } from "./middleware";
-import { MiddlewareFunction } from "./types";
+import { MiddlewareFunction } from "./middleware.types";
 
 export class MiddlewareTools {
   static isMiddlewareFunction(

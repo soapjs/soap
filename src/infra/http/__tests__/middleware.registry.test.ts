@@ -1,5 +1,6 @@
-import { Middleware } from "../middleware";
-import { MiddlewareRegistry, MiddlewareType } from "../middleware.registry";
+import { Middleware } from "../../common/middleware";
+import { MiddlewareRegistry } from "../../common/middleware.registry";
+import { MiddlewareType } from "../types";
 
 describe("MiddlewareRegistry", () => {
   let registry: MiddlewareRegistry;

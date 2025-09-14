@@ -1,26 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { MiddlewareFunction } from "./types";
+import { MiddlewareFunction } from "./middleware.types";
 import { Middleware } from "./middleware";
 import { MiddlewareTools } from "./middleware.tools";
-
-/**
- * Enum representing different types of middleware.
- *
- * @enum {string}
- */
-export enum MiddlewareType {
-  Security = "security",
-  Session = "session",
-  Compression = "compression",
-  Cors = "cors",
-  RateLimit = "rate_limit",
-  Validation = "validation",
-  AuthenticatedOnly = "authenticated_only",
-  AuthorizedOnly = "authenticated_only",
-  NonAuthenticatedOnly = "non_authenticated_only",
-  SelfOnly = "self_only",
-}
 
 /**
  * Middleware registry for managing middleware instances.

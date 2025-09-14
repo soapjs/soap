@@ -1,54 +1,59 @@
-import { BaseDomainEvent, DomainEvent, EventHandler, DomainEventBus } from '../event';
+import { BaseDomainEvent, DomainEvent } from '../../domain/domain-event';
 import { Result } from '../../common/result';
 
 describe('Event Pattern', () => {
   describe('BaseDomainEvent', () => {
-    class TestEvent extends BaseDomainEvent {
+    class TestEvent extends BaseDomainEvent<{ data: string }> {
       constructor(
-        public readonly data: string,
-        aggregateId?: string,
-        version?: number,
-        initiatedBy?: string,
-        correlationId?: string
+        data: string,
+        aggregateId: string = 'test-aggregate',
+        version: number = 1
       ) {
-        super('TestEvent', aggregateId, version, initiatedBy, correlationId);
+        super('TestEvent', aggregateId, { data }, version);
+      }
+
+      get eventData(): string {
+        return this.data.data;
       }
     }
 
     it('should create an event with unique ID', () => {
       const event = new TestEvent('test data');
       
-      expect(event.eventId).toBeDefined();
-      expect(event.eventId).toMatch(/^evt_\d+_[a-z0-9]+$/);
-      expect(event.eventType).toBe('TestEvent');
-      expect(event.occurredOn).toBeInstanceOf(Date);
+      expect(event.id).toBeDefined();
+      expect(event.id).toMatch(/^evt_\d+_[a-z0-9]+$/);
+      expect(event.type).toBe('TestEvent');
+      expect(event.timestamp).toBeInstanceOf(Date);
     });
 
     it('should create an event with all properties', () => {
-      const event = new TestEvent('test data', 'agg-123', 5, 'user-456', 'corr-789');
+      const event = new TestEvent('test data', 'agg-123', 5);
       
       expect(event.aggregateId).toBe('agg-123');
       expect(event.version).toBe(5);
-      expect(event.initiatedBy).toBe('user-456');
-      expect(event.correlationId).toBe('corr-789');
+      expect(event.eventData).toBe('test data');
     });
 
     it('should have different IDs for different events', () => {
       const event1 = new TestEvent('data1');
       const event2 = new TestEvent('data2');
       
-      expect(event1.eventId).not.toBe(event2.eventId);
+      expect(event1.id).not.toBe(event2.id);
     });
   });
 
   describe('EventHandler', () => {
-    class TestEvent extends BaseDomainEvent {
-      constructor(public readonly data: string) {
-        super('TestEvent');
+    class TestEvent extends BaseDomainEvent<{ data: string }> {
+      constructor(data: string) {
+        super('TestEvent', 'test-aggregate', { data });
+      }
+
+      get eventData(): string {
+        return this.data.data;
       }
     }
 
-    class TestEventHandler implements EventHandler<TestEvent> {
+    class TestEventHandler {
       async handle(event: TestEvent): Promise<Result<void>> {
         // Simulate processing
         return Result.withSuccess();
@@ -65,14 +70,18 @@ describe('Event Pattern', () => {
     });
   });
 
-  describe('DomainEventBus', () => {
-    class TestEvent extends BaseDomainEvent {
-      constructor(public readonly data: string) {
-        super('TestEvent');
+  describe('Event Bus', () => {
+    class TestEvent extends BaseDomainEvent<{ data: string }> {
+      constructor(data: string) {
+        super('TestEvent', 'test-aggregate', { data });
+      }
+
+      get eventData(): string {
+        return this.data.data;
       }
     }
 
-    class TestEventHandler implements EventHandler<TestEvent> {
+    class TestEventHandler {
       public handledEvents: TestEvent[] = [];
 
       async handle(event: TestEvent): Promise<Result<void>> {
@@ -81,36 +90,28 @@ describe('Event Pattern', () => {
       }
     }
 
-    class MockDomainEventBus implements DomainEventBus {
-      private handlers = new Map<string, EventHandler<any>[]>();
+    class MockEventBus {
+      private handlers = new Map<string, TestEventHandler[]>();
 
       async publish(event: DomainEvent): Promise<Result<void>> {
-        const handlers = this.handlers.get(event.eventType) || [];
+        const handlers = this.handlers.get(event.type) || [];
         
         for (const handler of handlers) {
-          await handler.handle(event);
+          await handler.handle(event as unknown as TestEvent);
         }
         
         return Result.withSuccess();
       }
 
-      subscribe<TEvent extends DomainEvent>(
-        eventType: new (...args: any[]) => TEvent,
-        handler: EventHandler<TEvent>
-      ): void {
-        const eventTypeName = eventType.name;
-        if (!this.handlers.has(eventTypeName)) {
-          this.handlers.set(eventTypeName, []);
+      subscribe(eventType: string, handler: TestEventHandler): void {
+        if (!this.handlers.has(eventType)) {
+          this.handlers.set(eventType, []);
         }
-        this.handlers.get(eventTypeName)!.push(handler);
+        this.handlers.get(eventType)!.push(handler);
       }
 
-      unsubscribe<TEvent extends DomainEvent>(
-        eventType: new (...args: any[]) => TEvent,
-        handler: EventHandler<TEvent>
-      ): void {
-        const eventTypeName = eventType.name;
-        const handlers = this.handlers.get(eventTypeName) || [];
+      unsubscribe(eventType: string, handler: TestEventHandler): void {
+        const handlers = this.handlers.get(eventType) || [];
         const index = handlers.indexOf(handler);
         if (index > -1) {
           handlers.splice(index, 1);
@@ -119,10 +120,10 @@ describe('Event Pattern', () => {
     }
 
     it('should publish events to subscribed handlers', async () => {
-      const bus = new MockDomainEventBus();
+      const bus = new MockEventBus();
       const handler = new TestEventHandler();
       
-      bus.subscribe(TestEvent, handler);
+      bus.subscribe('TestEvent', handler);
       
       const event = new TestEvent('test data');
       const result = await bus.publish(event);
@@ -133,12 +134,12 @@ describe('Event Pattern', () => {
     });
 
     it('should handle multiple handlers for the same event type', async () => {
-      const bus = new MockDomainEventBus();
+      const bus = new MockEventBus();
       const handler1 = new TestEventHandler();
       const handler2 = new TestEventHandler();
       
-      bus.subscribe(TestEvent, handler1);
-      bus.subscribe(TestEvent, handler2);
+      bus.subscribe('TestEvent', handler1);
+      bus.subscribe('TestEvent', handler2);
       
       const event = new TestEvent('test data');
       const result = await bus.publish(event);
@@ -149,11 +150,11 @@ describe('Event Pattern', () => {
     });
 
     it('should unsubscribe handlers', async () => {
-      const bus = new MockDomainEventBus();
+      const bus = new MockEventBus();
       const handler = new TestEventHandler();
       
-      bus.subscribe(TestEvent, handler);
-      bus.unsubscribe(TestEvent, handler);
+      bus.subscribe('TestEvent', handler);
+      bus.unsubscribe('TestEvent', handler);
       
       const event = new TestEvent('test data');
       const result = await bus.publish(event);

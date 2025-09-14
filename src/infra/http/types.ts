@@ -1,4 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { IO, MiddlewareFunction } from "../common";
+
+/**
+ * Enum representing different types of middleware.
+ *
+ * @enum {string}
+ */
+export enum MiddlewareType {
+  Security = "security",
+  Session = "session",
+  Compression = "compression",
+  Cors = "cors",
+  RateLimit = "rate_limit",
+  Validation = "validation",
+  AuthenticatedOnly = "authenticated_only",
+  AuthorizedOnly = "authenticated_only",
+  NonAuthenticatedOnly = "non_authenticated_only",
+  SelfOnly = "self_only",
+}
+
 /**
  * Represents the configuration for a specific route in SoapExpress.
  */
@@ -195,11 +216,6 @@ export type RoutesConfig = {
 };
 
 /**
- * Represents a generic middleware function.
- */
-export type MiddlewareFunction = (...args: any[]) => any;
-
-/**
  * Represents options for response compression.
  *
  * @typedef {Object} RouteCompressionOptions
@@ -227,7 +243,7 @@ export type RouteCompressionOptions = {
  * Configuration for Cross-Origin Resource Sharing (CORS).
  */
 export type RouteCorsOptions = {
-  origin?: string | string[] | RegExp;
+  origin?: string | string[] | RegExp | boolean;
   methods?: string | string[];
   headers?: string | string[];
   credentials?: boolean;
@@ -304,3 +320,307 @@ export type RequestMethod =
   | "OPTIONS"
   | "TRACE"
   | "ALL";
+
+/**
+ * Represents an authenticated user with basic identity and authorization information.
+ * This interface defines the structure of user data that can be accessed in authenticated requests.
+ * 
+ * @interface AuthUser
+ * @property {string | number} id - Unique identifier for the user
+ * @property {string} [email] - User's email address (optional)
+ * @property {string} [username] - User's username (optional)
+ * @property {string[]} [roles] - Array of role names assigned to the user (optional)
+ * @property {string[]} [permissions] - Array of permission strings granted to the user (optional)
+ * @property {any} [key] - Additional custom properties can be added dynamically
+ */
+export interface AuthUser {
+  id: string | number;
+  email?: string;
+  username?: string;
+  roles?: string[];
+  permissions?: string[];
+  [key: string]: any;
+}
+
+/**
+ * Extended request interface that includes authentication and session information.
+ * This interface extends the base request object with user authentication data,
+ * session information, and authorization details.
+ * 
+ * @interface AuthRequest
+ * @property {AuthUser} [user] - Authenticated user information (optional)
+ * @property {Object} [auth] - Authentication metadata (optional)
+ * @property {string} [auth.token] - Authentication token (JWT, API key, etc.)
+ * @property {string} [auth.type] - Type of authentication used (jwt, api_key, etc.)
+ * @property {any} [auth.payload] - Decoded token payload or authentication data
+ * @property {any} [session] - Session data object (optional)
+ * @property {string} [sessionID] - Unique session identifier (optional)
+ * @property {any} [key] - Additional custom properties can be added dynamically
+ */
+export interface AuthRequest {
+  user?: AuthUser;
+  auth?: {
+    token?: string;
+    type?: string;
+    payload?: any;
+  };
+  session?: any;
+  sessionID?: string;
+  [key: string]: any;
+}
+
+/**
+ * Enumeration of supported authentication types.
+ * Defines the different authentication strategies that can be used in the application.
+ * 
+ * @enum {string} AuthType
+ * @property {string} JWT - JSON Web Token authentication
+ * @property {string} LOCAL - Local username/password authentication
+ * @property {string} GOOGLE - Google OAuth authentication
+ * @property {string} GITHUB - GitHub OAuth authentication
+ * @property {string} FACEBOOK - Facebook OAuth authentication
+ * @property {string} API_KEY - API key-based authentication
+ * @property {string} SESSION - Session-based authentication
+ * @property {string} BASIC - HTTP Basic authentication
+ */
+export enum AuthType {
+  JWT = 'jwt',
+  LOCAL = 'local',
+  GOOGLE = 'google',
+  GITHUB = 'github',
+  FACEBOOK = 'facebook',
+  API_KEY = 'api_key',
+  SESSION = 'session',
+  BASIC = 'basic'
+}
+
+/**
+ * Interface for defining authentication strategies.
+ * This interface is used to implement custom authentication strategies that can be
+ * integrated with the authentication system, typically using Passport.js.
+ * 
+ * @interface AuthStrategy
+ * @property {string} name - Unique name identifier for the strategy
+ * @property {Function} configure - Method to configure the strategy with Passport instance
+ * @param {any} passport - Passport.js instance for configuration
+ * @property {Function} middleware - Method that returns Express middleware for the strategy
+ * @param {any} [options] - Optional configuration options for the middleware
+ * @returns {any} Express middleware function
+ * @property {Function} [serializeUser] - Optional method to serialize user data for sessions
+ * @param {any} user - User object to serialize
+ * @param {any} done - Callback function to call when serialization is complete
+ * @property {Function} [deserializeUser] - Optional method to deserialize user data from sessions
+ * @param {any} id - User identifier to deserialize
+ * @param {any} done - Callback function to call when deserialization is complete
+ */
+export interface AuthStrategy {
+  name: string;
+  configure(passport: any): void;
+  middleware(options?: any): any;
+  serializeUser?(user: any, done: any): void;
+  deserializeUser?(id: any, done: any): void;
+}
+
+/**
+ * Configuration interface for the authentication system.
+ * Defines the overall authentication setup including strategies, session configuration,
+ * and default authentication method.
+ * 
+ * @interface AuthConfig
+ * @property {AuthStrategy[]} strategies - Array of authentication strategies to use
+ * @property {SessionConfig} [session] - Optional session configuration for session-based auth
+ * @property {string} [defaultStrategy] - Optional name of the default authentication strategy
+ */
+export interface AuthConfig {
+  strategies: AuthStrategy[];
+  session?: SessionConfig;
+  defaultStrategy?: string;
+}
+
+/**
+ * Configuration interface for role-based access control (RBAC).
+ * Defines authorization rules and permissions for different user roles and resources.
+ * 
+ * @interface RoleConfig
+ * @property {boolean} [authenticatedOnly] - Whether only authenticated users can access the resource
+ * @property {string[]} [allow] - Array of role names that are allowed to access the resource
+ * @property {string[]} [deny] - Array of role names that are explicitly denied access
+ * @property {boolean | Function} [selfOnly] - Whether users can only access their own resources
+ * @param {AuthUser} user - The authenticated user
+ * @param {string} resourceId - The ID of the resource being accessed
+ * @returns {boolean} True if user can access the resource
+ * @property {Function} [customCheck] - Custom authorization function for complex permission logic
+ * @param {AuthUser} user - The authenticated user
+ * @param {AuthRequest} req - The request object with additional context
+ * @returns {boolean | Promise<boolean>} True if user is authorized, can be async
+ */
+export interface RoleConfig {
+  authenticatedOnly?: boolean;
+  allow?: string[];
+  deny?: string[];
+  selfOnly?: boolean | ((user: AuthUser, resourceId: string) => boolean);
+  customCheck?: (user: AuthUser, req: AuthRequest) => boolean | Promise<boolean>;
+}
+
+/**
+ * Comprehensive configuration interface for session management.
+ * Supports multiple session stores (memory, Redis, MongoDB, file) with extensive
+ * customization options for security, performance, and behavior.
+ * 
+ * @interface SessionConfig
+ * @property {string} secret - Secret key used to sign session cookies (required)
+ * @property {string} [name] - Name of the session cookie (default: 'connect.sid')
+ * @property {'memory' | 'db' | 'file'} [store] - Type of session store to use
+ * @property {Object} [cookie] - Cookie configuration options
+ * @property {boolean} [cookie.secure] - Whether to send cookies only over HTTPS
+ * @property {boolean} [cookie.httpOnly] - Whether to prevent client-side access to cookies
+ * @property {number} [cookie.maxAge] - Maximum age of the cookie in milliseconds
+ * @property {'strict' | 'lax' | 'none'} [cookie.sameSite] - SameSite attribute for CSRF protection
+ * @property {string} [cookie.domain] - Domain for which the cookie is valid
+ * @property {string} [cookie.path] - Path for which the cookie is valid
+ * @property {boolean} [resave] - Whether to save session data even if not modified
+ * @property {boolean} [saveUninitialized] - Whether to save uninitialized sessions
+ * @property {boolean} [rolling] - Whether to reset expiration on each request
+ * @property {'destroy' | 'keep'} [unset] - What to do when session is unset
+ * 
+ * @property {Object} [redis] - Redis store configuration
+ * @property {string} [redis.url] - Redis connection URL
+ * @property {string} [redis.host] - Redis server hostname
+ * @property {number} [redis.port] - Redis server port
+ * @property {string} [redis.password] - Redis server password
+ * @property {number} [redis.db] - Redis database number
+ * @property {string} [redis.prefix] - Prefix for session keys in Redis
+ * 
+ * @property {Object} [mongodb] - MongoDB store configuration
+ * @property {string} [mongodb.url] - MongoDB connection URL
+ * @property {string} [mongodb.collection] - MongoDB collection name for sessions
+ * @property {number} [mongodb.touchAfter] - Interval in seconds to touch sessions
+ * @property {number} [mongodb.ttl] - Time-to-live for sessions in seconds
+ * 
+ * @property {Object} [file] - File store configuration
+ * @property {string} [file.path] - Directory path for storing session files
+ * @property {number} [file.ttl] - Time-to-live for session files in seconds
+ * @property {number} [file.reapInterval] - Interval in seconds to clean up expired sessions
+ * 
+ * @property {Function} [genid] - Function to generate unique session IDs
+ * @returns {string} Unique session identifier
+ * @property {boolean} [proxy] - Whether to trust proxy headers
+ * @property {number} [touchAfter] - Interval in seconds to touch sessions
+ */
+export interface SessionConfig {
+  secret: string;
+  name?: string;
+  store?: 'memory' | 'db' | 'file';
+  cookie?: {
+    secure?: boolean;
+    httpOnly?: boolean;
+    maxAge?: number;
+    sameSite?: 'strict' | 'lax' | 'none';
+    domain?: string;
+    path?: string;
+  };
+  resave?: boolean;
+  saveUninitialized?: boolean;
+  rolling?: boolean;
+  unset?: 'destroy' | 'keep';
+  
+  // Store-specific options
+  redis?: {
+    url?: string;
+    host?: string;
+    port?: number;
+    password?: string;
+    db?: number;
+    prefix?: string;
+  };
+  
+  mongodb?: {
+    url?: string;
+    collection?: string;
+    touchAfter?: number;
+    ttl?: number;
+  };
+  
+  file?: {
+    path?: string;
+    ttl?: number;
+    reapInterval?: number;
+  };
+  
+  // Security options
+  genid?: () => string;
+  proxy?: boolean;
+  touchAfter?: number;
+}
+
+// Generic HTTP context interfaces for framework abstraction
+export interface HttpRequest {
+  method: string;
+  path: string;
+  headers: Record<string, string | string[] | undefined>;
+  body?: any;
+  query?: Record<string, any>;
+  params?: Record<string, any>;
+  files?: any;
+  cookies?: Record<string, string>;
+  secure?: boolean;
+  ip?: string;
+  memoryInfo?: any;
+  connection?: { remoteAddress?: string };
+  [key: string]: any;
+}
+
+export interface HttpResponse {
+  status(code: number): HttpResponse;
+  json(data: any): HttpResponse;
+  cookie(name: string, value: string, options?: any): HttpResponse;
+  setHeader(name: string, value: string): HttpResponse;
+  locals?: Record<string, any>;
+  [key: string]: any;
+}
+
+export interface HttpContext {
+  req: HttpRequest;
+  res: HttpResponse;
+  next: () => void;
+}
+
+export interface RouteMetadata {
+  method: RequestMethod;
+  path: string;
+  middlewares: MiddlewareMetadata[];
+  useCase?: any;
+  routeIO?: IO;
+  handler?: AnyHandler;
+  options?: RouteAdditionalOptions;
+}
+
+export interface MiddlewareMetadata {
+  type: string;
+  options: any;
+  order: number;
+  middleware?: any;
+}
+
+export interface ControllerMetadata {
+  basePath: string;
+  middlewares: MiddlewareMetadata[];
+  type?: 'http' | 'websocket';
+  options?: {
+    apiDoc?: {
+      tags?: string[];
+      description?: string;
+      externalDocs?: {
+        description?: string;
+        url: string;
+      };
+      responses?: Record<string, any>;
+      parameters?: any[];
+      summary?: string;
+      deprecated?: boolean;
+      operationId?: string;
+      examples?: Record<string, any>;
+      security?: any[];
+    };
+  };
+}

@@ -1,6 +1,6 @@
 import { BaseSaga, Saga, SagaStep, SagaStatus, SagaManager } from '../saga';
 import { BaseCommand } from '../command';
-import { BaseDomainEvent } from '../event';
+import { BaseDomainEvent } from '../../domain/domain-event';
 import { Result } from '../../common/result';
 
 class TestCommand extends BaseCommand<string> {
@@ -9,9 +9,13 @@ class TestCommand extends BaseCommand<string> {
     }
   }
 
-  class TestEvent extends BaseDomainEvent {
-    constructor(public readonly data: string) {
-      super('TestEvent');
+  class TestEvent extends BaseDomainEvent<{ data: string }> {
+    constructor(data: string) {
+      super('TestEvent', 'test-aggregate', { data });
+    }
+
+    get eventData(): string {
+      return this.data.data;
     }
   }
 

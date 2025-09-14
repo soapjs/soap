@@ -13,8 +13,8 @@ import {
   AnyContext,
   BlockchainContext,
   DatabaseContext,
-  HttpContext,
-  WebSocketContext,
+  WebContext,
+  SocketContext,
 } from "./repository-data-contexts";
 import { RepositoryMethodError } from "../domain/errors";
 
@@ -31,8 +31,8 @@ export class ReadRepository<EntityType, DocumentType = unknown>
   constructor(
     public readonly context:
       | DatabaseContext<EntityType, DocumentType>
-      | HttpContext<EntityType, DocumentType>
-      | WebSocketContext<EntityType, DocumentType>
+      | WebContext<EntityType, DocumentType>
+      | SocketContext<EntityType, DocumentType>
       | BlockchainContext<EntityType, DocumentType>
       | AnyContext<EntityType, DocumentType>
   ) {}
@@ -65,20 +65,35 @@ export class ReadRepository<EntityType, DocumentType = unknown>
         );
       }
 
+      // Check cache first if available (only for DatabaseContext)
+      if (DatabaseContext.isDatabaseContext(this.context) && this.context.isCacheEnabled()) {
+        const cacheKey = this.context.getCacheKey('aggregate', query);
+        const cached = await this.context.cache!.get<ResultType>(cacheKey);
+        
+        if (cached) {
+          return Result.withSuccess(cached);
+        }
+      }
+
       const aggregation = await this.context.source.aggregate(query);
       const conversionMapper = mapper || this.context.mapper;
 
+      let result: ResultType;
       if (Array.isArray(aggregation)) {
-        return Result.withSuccess(
-          aggregation.map((document) =>
-            conversionMapper.toEntity(<AggregationType & DocumentType>document)
-          ) as ResultType
-        );
+        result = aggregation.map((document) =>
+          conversionMapper.toEntity(<AggregationType & DocumentType>document)
+        ) as ResultType;
+      } else {
+        result = conversionMapper.toEntity(aggregation) as ResultType;
       }
 
-      return Result.withSuccess(
-        conversionMapper.toEntity(aggregation) as ResultType
-      );
+      // Cache the result if cache is enabled (only for DatabaseContext)
+      if (DatabaseContext.isDatabaseContext(this.context) && this.context.isCacheEnabled()) {
+        const cacheKey = this.context.getCacheKey('aggregate', query);
+        await this.context.cache!.set(cacheKey, result);
+      }
+
+      return Result.withSuccess(result);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
@@ -105,7 +120,23 @@ export class ReadRepository<EntityType, DocumentType = unknown>
         query = {};
       }
 
+      // Check cache first if available (only for DatabaseContext)
+      if (DatabaseContext.isDatabaseContext(this.context) && this.context.isCacheEnabled()) {
+        const cacheKey = this.context.getCacheKey('count', query);
+        const cached = await this.context.cache!.get<number>(cacheKey);
+        
+        if (cached !== null) {
+          return Result.withSuccess(cached);
+        }
+      }
+
       const count = await this.context.source.count(query);
+
+      // Cache the result if cache is enabled (only for DatabaseContext)
+      if (DatabaseContext.isDatabaseContext(this.context) && this.context.isCacheEnabled()) {
+        const cacheKey = this.context.getCacheKey('count', query);
+        await this.context.cache!.set(cacheKey, count);
+      }
 
       return Result.withSuccess(count);
     } catch (error) {
@@ -133,11 +164,26 @@ export class ReadRepository<EntityType, DocumentType = unknown>
         query = {};
       }
 
-      const documents = await this.context.source.find(query);
+      // Check cache first if available (only for DatabaseContext)
+      if (DatabaseContext.isDatabaseContext(this.context) && this.context.isCacheEnabled()) {
+        const cacheKey = this.context.getCacheKey('find', query);
+        const cached = await this.context.cache!.get<EntityType[]>(cacheKey);
+        
+        if (cached) {
+          return Result.withSuccess(cached);
+        }
+      }
 
-      return Result.withSuccess(
-        documents.map((document) => this.context.mapper.toEntity(document))
-      );
+      const documents = await this.context.source.find(query);
+      const entities = documents.map((document) => this.context.mapper.toEntity(document));
+
+      // Cache the result if cache is enabled (only for DatabaseContext)
+      if (DatabaseContext.isDatabaseContext(this.context) && this.context.isCacheEnabled()) {
+        const cacheKey = this.context.getCacheKey('find', query);
+        await this.context.cache!.set(cacheKey, entities);
+      }
+
+      return Result.withSuccess(entities);
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }

@@ -1,7 +1,7 @@
 import {
   DatabaseContext,
-  HttpContext,
-  WebSocketContext,
+  WebContext,
+  SocketContext,
   BlockchainContext,
   AnyContext,
 } from "../repository-data-contexts";
@@ -65,8 +65,8 @@ describe("HttpContext", () => {
   it("should create an instance of HttpContext", () => {
     const source: any = MockNonDatabaseSource;
     const mapper = MockMapper;
-    const context = new HttpContext("http://example.com", source, mapper);
-    expect(context.isHttpContext).toBe(true);
+    const context = new WebContext("http://example.com", source, mapper);
+    expect(context.isWebContext).toBe(true);
     expect(context.baseUrl).toBe("http://example.com");
     expect(context.source).toBe(source);
     expect(context.mapper).toBe(mapper);
@@ -75,27 +75,27 @@ describe("HttpContext", () => {
   it("should identify as HttpContext", () => {
     const source: any = MockNonDatabaseSource;
     const mapper = MockMapper;
-    const context = new HttpContext("http://example.com", source, mapper);
-    expect(HttpContext.isHttpContext(context)).toBe(true);
+    const context = new WebContext("http://example.com", source, mapper);
+    expect(WebContext.isWebContext(context)).toBe(true);
   });
 });
 
-describe("WebSocketContext", () => {
-  it("should create an instance of WebSocketContext", () => {
+describe("SocketContext", () => {
+  it("should create an instance of SocketContext", () => {
     const source: any = MockNonDatabaseSource;
     const mapper = MockMapper;
-    const context = new WebSocketContext("ws://example.com", source, mapper);
-    expect(context.isWebSocketContext).toBe(true);
+    const context = new SocketContext("ws://example.com", source, mapper);
+    expect(context.isSocketContext).toBe(true);
     expect(context.endpoint).toBe("ws://example.com");
     expect(context.source).toBe(source);
     expect(context.mapper).toBe(mapper);
   });
 
-  it("should identify as WebSocketContext", () => {
+  it("should identify as SocketContext", () => {
     const source: any = MockNonDatabaseSource;
     const mapper = MockMapper;
-    const context = new WebSocketContext("ws://example.com", source, mapper);
-    expect(WebSocketContext.isWebSocketContext(context)).toBe(true);
+    const context = new SocketContext("ws://example.com", source, mapper);
+    expect(SocketContext.isSocketContext(context)).toBe(true);
   });
 });
 

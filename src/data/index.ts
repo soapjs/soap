@@ -9,3 +9,4 @@ export * from "./database-session";
 export * from "./database-session-registry";
 export * from "./property-transformer";
 export * from "./meta-mapper";
+export * from "./cache-manager";

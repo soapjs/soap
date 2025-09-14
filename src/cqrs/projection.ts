@@ -1,5 +1,5 @@
 import { Result } from "../common/result";
-import { DomainEvent } from "./event";
+import { DomainEvent } from "../domain/domain-event";
 import { ReadModel } from "./read-model";
 
 /**

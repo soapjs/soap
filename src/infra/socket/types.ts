@@ -98,7 +98,7 @@ export interface SocketServerOptions {
   onMessage?: (clientId: string, message: SocketMessage) => void;
 }
 
-export interface SocketHandler<MessageType, HeadersType> {
+export interface SocketEventHandler<MessageType, HeadersType> {
   onMessage(message: SocketMessage<MessageType, HeadersType>): void;
   onError(
     error: Error,

@@ -13,3 +13,4 @@ export * from "./where";
 export * from "./id-type";
 export * from "./decorators";
 export * from "./value-object";
+export * from "./domain-event";

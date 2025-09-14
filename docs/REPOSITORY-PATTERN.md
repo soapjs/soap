@@ -213,11 +213,11 @@ const apiContext = new HttpContext(
 const userRepository = new ReadRepository(apiContext);
 ```
 
-#### 3. WebSocketContext
+#### 3. SocketContext
 For real-time data streams.
 
 ```typescript
-const wsContext = new WebSocketContext(
+const wsContext = new SocketContext(
   'ws://localhost:8080/users', // WebSocket endpoint
   wsSource,                    // WebSocket source
   userMapper                   // Mapper
@@ -508,7 +508,7 @@ const cacheUserRepository = new ReadRepository(
 
 // Real-time repository for live updates
 const realtimeUserRepository = new ReadRepository(
-  new WebSocketContext('ws://realtime:8080/users', wsSource, userMapper)
+  new SocketContext('ws://realtime:8080/users', wsSource, userMapper)
 );
 
 // Usage
@@ -743,7 +743,7 @@ class GenericRepository<T> extends ReadWriteRepository<T> {}
 
 - **DatabaseContext**: For transactional operations
 - **HttpContext**: For external API integrations
-- **WebSocketContext**: For real-time features
+- **SocketContext**: For real-time features
 - **AnyContext**: For testing or custom sources
 
 ### 5. Handle Null/Undefined Values

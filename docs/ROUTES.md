@@ -44,7 +44,7 @@ class Route {
     path: string | string[],
     handler: AnyHandler,
     options?: RouteAdditionalOptions,
-    io?: RouteIO
+    io?: IO
   );
 }
 ```
@@ -161,7 +161,7 @@ class RouteGroup {
   constructor(
     path: string,
     options?: RouteAdditionalOptions,
-    io?: RouteIO,
+    io?: IO,
     routes?: Route[]
   );
   
@@ -196,19 +196,19 @@ registry.register(userGroup);
 
 ### Route IO
 
-The `RouteIO` interface provides input/output mapping and transformation capabilities.
+The `IO` interface provides input/output mapping and transformation capabilities.
 
 #### Interface
 
 ```typescript
-import { RouteIO } from "@soapjs/soap";
+import { IO } from "@soapjs/soap";
 
-interface RouteIO<I = unknown, O = unknown, RequestType = unknown, ResponseType = unknown> {
-  // Convert result to response
-  toResponse?(response: ResponseType, result?: HandlerResult<O>): void;
+interface IO<I = unknown, O = unknown> {
+  // Extract and transform data from source
+  from<T>(source: T): I;
   
-  // Extract data from request
-  fromRequest?(request: RequestType, ...args: unknown[]): I;
+  // Send result to target
+  to<T>(result: any, target: T): void;
 }
 ```
 
@@ -216,8 +216,9 @@ interface RouteIO<I = unknown, O = unknown, RequestType = unknown, ResponseType 
 
 ```typescript
 // Custom IO implementation
-class UserRouteIO implements RouteIO<UserInput, UserOutput, Request, Response> {
-  fromRequest(request: Request): UserInput {
+class UserIO implements IO<UserInput, UserOutput> {
+  from<T>(source: T): UserInput {
+    const request = source as Request;
     return {
       name: request.body.name,
       email: request.body.email,
@@ -225,7 +226,8 @@ class UserRouteIO implements RouteIO<UserInput, UserOutput, Request, Response> {
     };
   }
   
-  toResponse(response: Response, result?: HandlerResult<UserOutput>): void {
+  to<T>(result: any, target: T): void {
+    const response = target as Response;
     if (result?.content) {
       response.json({
         success: true,
@@ -241,7 +243,7 @@ class UserRouteIO implements RouteIO<UserInput, UserOutput, Request, Response> {
 }
 
 // Use with route
-const route = new PostRoute("/users", createUserHandler, options, new UserRouteIO());
+const route = new PostRoute("/users", createUserHandler, options, new UserIO());
 ```
 
 ## Middleware System
@@ -624,7 +626,7 @@ import {
   PutRoute, 
   DeleteRoute,
   MiddlewareRegistry,
-  RouteIO,
+  IO,
   Result 
 } from "@soapjs/soap";
 
@@ -675,23 +677,23 @@ const deleteUserHandler = async (req: Request, res: Response) => {
 };
 
 // 2. Custom Route IO
-class UserRouteIO implements RouteIO<UserInput, UserOutput, Request, Response> {
-  fromRequest(request: Request): UserInput {
+class UserIO implements IO<UserInput, UserOutput, Request, Response> {
+  from<Request>(source: Request): UserInput {
     return {
-      name: request.body.name,
-      email: request.body.email,
-      age: parseInt(request.body.age)
+      name: source.body.name,
+      email: source.body.email,
+      age: parseInt(source.body.age)
     };
   }
   
-  toResponse(response: Response, result?: HandlerResult<UserOutput>): void {
+  to<Response>(result?: HandlerResult<UserOutput>, target: Response): void {
     if (result?.content) {
-      response.json({
+      target.json({
         success: true,
         data: result.content
       });
     } else if (result?.error) {
-      response.status(400).json({
+      target.status(400).json({
         success: false,
         error: result.error.message
       });
@@ -771,7 +773,7 @@ const userGroup = new RouteGroup("/users", {
   middlewares: {
     pre: [middlewareRegistry.use("auth")]
   }
-}, new UserRouteIO());
+}, new UserIO());
 
 // Add routes to user group
 userGroup.add(new GetRoute("/", listUsersHandler, {

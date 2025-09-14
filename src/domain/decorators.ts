@@ -190,19 +190,43 @@ export const IsTransaction = (
 };
 
 /**
+ * Helper function to automatically find components that require sessions.
+ * Looks for properties marked with @UseSession decorator.
+ */
+function findSessionComponents(instance: any): string[] {
+  const sessionComponents: string[] = [];
+  const prototype = Object.getPrototypeOf(instance);
+  
+  // Get all property names from the instance
+  const propertyNames = Object.getOwnPropertyNames(instance);
+  
+  for (const propertyName of propertyNames) {
+    const metadata = Reflect.getMetadata("useSession", prototype, propertyName);
+    if (metadata) {
+      sessionComponents.push(propertyName);
+    }
+  }
+  
+  return sessionComponents;
+}
+
+/**
  * Method decorator that marks a method to be executed within a transaction.
  *
  * It allows specifying which components (e.g., repositories or services) should use database sessions.
  * The decorator initializes sessions for these components and ensures their lifecycle is managed within the transaction context.
+ * If sessionComponents is not provided, it will automatically find components marked with @UseSession.
  *
  * @param {Object} [options] - Configuration options for the transaction.
- * @param {string[]} [options.sessionComponents] - A list of property names (keys in the `UseCase` instance) that require sessions.
+ * @param {string[]} [options.sessionComponents] - A list of property names (keys in the `UseCase` instance) that require sessions. If not provided, will auto-detect @UseSession properties.
  * @param {string} [options.tag] - An optional tag for the `TransactionRunner` instance, used for managing multiple runners.
+ * @param {boolean} [options.autoDetectSessions] - Whether to automatically detect @UseSession properties (default: true).
  * @returns {MethodDecorator} - The method decorator.
  */
 export function Transactional(options?: {
   sessionComponents?: string[];
   tag?: string;
+  autoDetectSessions?: boolean;
 }): MethodDecorator {
   return function (
     target: Object,
@@ -212,8 +236,9 @@ export function Transactional(options?: {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
-      const sessionComponents: any[] = [];
+      let sessionComponents: any[] = [];
 
+      // Use provided session components or auto-detect
       if (options?.sessionComponents) {
         for (const componentName of options.sessionComponents) {
           const component = this[componentName];
@@ -223,6 +248,15 @@ export function Transactional(options?: {
             );
           }
           sessionComponents.push(component);
+        }
+      } else if (options?.autoDetectSessions !== false) {
+        // Auto-detect components with @UseSession
+        const componentNames = findSessionComponents(this);
+        for (const componentName of componentNames) {
+          const component = this[componentName];
+          if (component) {
+            sessionComponents.push(component);
+          }
         }
       }
 
