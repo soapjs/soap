@@ -9,4 +9,4 @@ export * from './metrics';
 export * from './monitoring';
 export * from './http-app';
 export * from './security';
-export * from './plugins/plugin';
+export * from './plugins';
