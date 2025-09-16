@@ -1,4 +1,5 @@
 import { Route } from "./route";
+import { RouteGroup } from "./route.group";
 
 /**
  * Router interface.
@@ -37,5 +38,16 @@ export interface Router {
    * Mounts a route or a set of routes.
    * @param data Route or set of routes to mount.
    */
-  mount(data: Route | Route[]);
+  mount(data: Route | Route[] | RouteGroup | RouteGroup[]);
 }
+
+export const isRouter = (value: any): value is Router => {
+  return value && 
+  typeof value === 'object' &&
+  typeof value.mount === 'function' &&
+  typeof value.prefix === 'string' &&
+  typeof value.apiVersion === 'string' &&
+  typeof value.initialize === 'function' &&
+  typeof value.setupRoutes === 'function' &&
+  typeof value.reloadRoutes === 'function';
+};

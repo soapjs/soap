@@ -29,6 +29,7 @@ export interface Provider {
   useFactory?: (...args: any[]) => any;
   scope?: Scope;
   dependencies?: string[];
+  injectContainer?: boolean; // New option to inject DI container into factory
 }
 
 /**

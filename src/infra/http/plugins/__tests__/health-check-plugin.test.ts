@@ -1,5 +1,12 @@
-import { HealthCheckPlugin } from '../health-check-plugin';
-import { HealthCheckOptions } from '../plugin';
+import { HealthCheckPlugin, HealthCheckOptions } from '../health-check-plugin';
+
+// Mock RouteRegistry
+const mockRouteRegistry = {
+  register: jest.fn(),
+  removeRoute: jest.fn(),
+  getRoutes: jest.fn(() => []),
+  clear: jest.fn()
+};
 
 // Mock Express app
 const mockExpressApp = {
@@ -11,21 +18,21 @@ const mockExpressApp = {
 
 // Mock HttpApp
 const mockHttpApp = {
-  getApp: () => mockExpressApp
-} as any;
-
-// Mock EnhancedPluginContext
-const mockContext = {
-  getContainer: jest.fn(),
-  getService: jest.fn(),
-  registerService: jest.fn(),
-  getExpressApp: () => mockExpressApp,
-  getRouteRegistry: jest.fn(),
-  getMiddlewareRegistry: jest.fn(),
-  getAuthRegistry: jest.fn(),
-  createRoute: jest.fn(),
-  createMiddleware: jest.fn(),
-  createAuthStrategy: jest.fn()
+  getApp: () => mockExpressApp,
+  getRouteRegistry: () => mockRouteRegistry,
+  getMiddlewareRegistry: jest.fn(() => ({})),
+  useMiddleware: jest.fn(),
+  getContainer: jest.fn(() => ({})),
+  start: jest.fn(),
+  stop: jest.fn(),
+  getServer: jest.fn(),
+  register: jest.fn(),
+  usePlugin: jest.fn(),
+  getPlugin: jest.fn(),
+  listPlugins: jest.fn(() => []),
+  isDevelopment: jest.fn(() => false),
+  isProduction: jest.fn(() => true),
+  isTest: jest.fn(() => false)
 } as any;
 
 describe('HealthCheckPlugin', () => {
@@ -46,8 +53,6 @@ describe('HealthCheckPlugin', () => {
       const defaultPlugin = new HealthCheckPlugin();
       
       expect(defaultPlugin.name).toBe('health-check');
-      expect(defaultPlugin.version).toBe('1.0.0');
-      expect(defaultPlugin.description).toBe('Basic health check plugin for SoapExpress');
     });
 
     it('should merge provided options with defaults', () => {
@@ -67,13 +72,16 @@ describe('HealthCheckPlugin', () => {
 
   describe('install', () => {
     it('should install plugin and register health check route', () => {
-      plugin.install(mockHttpApp, mockContext);
+      plugin.install(mockHttpApp);
       
-      expect(mockExpressApp.get).toHaveBeenCalledWith('/health', expect.any(Function));
+      expect(mockRouteRegistry.register).toHaveBeenCalledWith(expect.objectContaining({
+        method: 'GET',
+        path: '/health'
+      }));
     });
 
     it('should add default health checks', () => {
-      plugin.install(mockHttpApp, mockContext);
+      plugin.install(mockHttpApp);
       
       const checks = plugin.getHealthChecks();
       expect(checks).toHaveLength(3); // uptime, memory, process
@@ -90,7 +98,7 @@ describe('HealthCheckPlugin', () => {
         timeout: 10000
       };
       
-      plugin.install(mockHttpApp, mockContext, installOptions);
+      plugin.install(mockHttpApp, installOptions);
       
       expect(plugin['options'].path).toBe('/custom-health');
       expect(plugin['options'].timeout).toBe(10000);
@@ -99,18 +107,17 @@ describe('HealthCheckPlugin', () => {
 
   describe('uninstall', () => {
     it('should uninstall plugin and remove route', () => {
-      plugin.install(mockHttpApp, mockContext);
+      plugin.install(mockHttpApp);
       plugin.uninstall(mockHttpApp);
       
-      // In real implementation, this would remove the route from the router stack
-      expect(true).toBe(true); // Placeholder assertion
+      expect(mockRouteRegistry.removeRoute).toHaveBeenCalledWith('GET', '/health');
     });
   });
 
   describe('addHealthCheck', () => {
     it('should add custom health check', () => {
       // Install plugin first to add default checks
-      plugin.install(mockHttpApp, mockContext);
+      plugin.install(mockHttpApp);
       
       const customCheck = {
         name: 'custom',
@@ -183,10 +190,10 @@ describe('HealthCheckPlugin', () => {
 
   describe('health check execution', () => {
     it('should execute health checks and return proper response format', async () => {
-      plugin.install(mockHttpApp, mockContext);
+      plugin.install(mockHttpApp);
       
-      // Mock the route handler
-      const routeHandler = mockExpressApp.get.mock.calls[0][1];
+      // Mock the route handler from RouteRegistry
+      const routeHandler = mockRouteRegistry.register.mock.calls[0][0].handler;
       
       // Mock request and response
       const mockReq = {};

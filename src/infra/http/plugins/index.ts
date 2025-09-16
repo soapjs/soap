@@ -1,8 +1,6 @@
 // Plugin system exports
-export * from './plugin-registry';
-export * from './plugin-manager';
-export * from './plugin-discovery';
 export * from './health-check-plugin';
-
-// Re-export plugin types
-export * from './plugin';
+export * from './ping-plugin';
+export * from './metrics-plugin';
+export * from './memory-monitoring-plugin';
+export * from './security-plugin';

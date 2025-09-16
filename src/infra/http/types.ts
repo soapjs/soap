@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { IO, MiddlewareFunction } from "../common";
+import { DIContainer } from "../../common";
+import { IO, Middleware, MiddlewareFunction, MiddlewareRegistry } from "../common";
+import { Route } from "./route";
+import { RouteGroup } from "./route.group";
+import { RouteRegistry } from "./route.registry";
 
 /**
  * Enum representing different types of middleware.
@@ -624,3 +628,70 @@ export interface ControllerMetadata {
     };
   };
 }
+
+export interface PluginLifecycle {
+  install<Framework>(app: HttpApp<Framework>, options?: any): Promise<void>;
+  uninstall?<Framework>(app: HttpApp<Framework>): void;
+  beforeStart?<Framework>(app: HttpApp<Framework>): void;
+  afterStart?<Framework>(app: HttpApp<Framework>): void;
+  beforeStop?<Framework>(app: HttpApp<Framework>): void;
+  afterStop?<Framework>(app: HttpApp<Framework>): void;
+}
+
+export interface PluginMetadata {
+  name: string;
+  version?: string;
+  description?: string;
+  author?: string;
+  dependencies?: string[];
+  peerDependencies?: string[];
+  tags?: string[];
+  category?: string;
+}
+
+export interface HttpPlugin extends PluginLifecycle, PluginMetadata {
+  middleware?: MiddlewareMetadata[];
+  routes?: RouteMetadata[];
+  config?: Record<string, any>;
+  installed?: boolean;
+  enabled?: boolean;
+  
+  install<Framework>(app: HttpApp<Framework>, options?: any): Promise<void>;
+}
+
+export interface PluginRegistry {
+  register(plugin: HttpPlugin): void;
+  unregister(pluginName: string): void;
+  get(pluginName: string): HttpPlugin | undefined;
+  list(): HttpPlugin[];
+  install<Framework>(app: HttpApp<Framework>, pluginName: string, options?: any): Promise<void>;
+  isInstalled(pluginName: string): boolean;
+  getInstalled(): HttpPlugin[];
+}
+
+export interface PluginManager {
+  usePlugin(plugin: HttpPlugin, options?: any): void;
+  listPlugins(): HttpPlugin[];
+  getPlugin(pluginName: string): HttpPlugin | undefined;
+  isPluginLoaded(pluginName: string): boolean;
+}
+
+export interface HttpApp<Framework = any> {
+  start(port: number): Promise<void>;
+  stop(): Promise<void>;
+  getApp(): Framework;
+  getServer<T>(): T;
+  getRouteRegistry(): RouteRegistry;
+  getMiddlewareRegistry(): MiddlewareRegistry;
+  getContainer(): DIContainer;
+  register(...item: (Route | RouteGroup)[]): this;
+  useMiddleware(...middlewares: Middleware[]): this;
+  usePlugin(plugin: HttpPlugin, options?: any): this;
+  getPlugin(pluginName: string): HttpPlugin | undefined;
+  listPlugins(): HttpPlugin[];
+  isDevelopment(): boolean;
+  isProduction(): boolean;
+  isTest(): boolean;
+  isStaging(): boolean;
+}
+  

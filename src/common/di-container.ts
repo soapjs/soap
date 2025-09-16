@@ -2,6 +2,7 @@
 import 'reflect-metadata';
 import { Scope, Provider, Module, DependencyContext } from './di-types';
 import { getInjectableMetadata, getInjectMetadata, getParamTypes } from './di-decorators';
+import { BindingBuilder } from './binding-builder';
 
 /**
  * Enhanced DI Container with NestJS-style API
@@ -12,21 +13,28 @@ export class DIContainer {
   private modules = new Map<string, Module>();
 
   /**
-   * Register a provider with the container
+   * Bind a token to a provider (Inversify-style API)
    */
-  bind<T>(token: string, provider: Provider): this {
+  bind<T>(token: string | symbol | Function): BindingBuilder<T> {
+    return new BindingBuilder<T>(this, this.resolveTokenKey(token));
+  }
+
+  /**
+   * Register a provider with the container (internal method)
+   */
+  private bindProvider<T>(token: string, provider: Provider): this {
     this.providers.set(token, provider);
     return this;
   }
 
   /**
-   * Register a class provider
+   * Register a class provider (internal method)
    */
   bindClass<T>(token: string, constructor: new (...args: any[]) => T, options?: {
     scope?: Scope;
     dependencies?: string[];
   }): this {
-    return this.bind(token, {
+    return this.bindProvider(token, {
       token,
       useClass: constructor,
       scope: options?.scope || Scope.SINGLETON,
@@ -35,10 +43,10 @@ export class DIContainer {
   }
 
   /**
-   * Register a value provider
+   * Register a value provider (internal method)
    */
   bindValue<T>(token: string, value: T): this {
-    return this.bind(token, {
+    return this.bindProvider(token, {
       token,
       useValue: value,
       scope: Scope.SINGLETON
@@ -46,17 +54,19 @@ export class DIContainer {
   }
 
   /**
-   * Register a factory provider
+   * Register a factory provider (internal method)
    */
   bindFactory<T>(token: string, factory: (...args: any[]) => T, options?: {
     scope?: Scope;
     dependencies?: string[];
+    injectContainer?: boolean;
   }): this {
-    return this.bind(token, {
+    return this.bindProvider(token, {
       token,
       useFactory: factory,
       scope: options?.scope || Scope.SINGLETON,
-      dependencies: options?.dependencies || []
+      dependencies: options?.dependencies || [],
+      injectContainer: options?.injectContainer || false
     });
   }
 
@@ -107,7 +117,13 @@ export class DIContainer {
 
     if (provider.useFactory) {
       const dependencies = this.resolveDependencies(provider.dependencies || []);
-      return provider.useFactory(...dependencies);
+      
+      // If injectContainer is true, pass container as first argument
+      if (provider.injectContainer) {
+        return provider.useFactory(this, ...dependencies);
+      } else {
+        return provider.useFactory(...dependencies);
+      }
     }
 
     if (provider.useClass) {
@@ -131,10 +147,21 @@ export class DIContainer {
    */
   private autoResolveDependencies(constructor: new (...args: any[]) => any): any[] {
     const paramTypes = getParamTypes(constructor);
+    const injectMetadata = getInjectMetadata(constructor);
     const dependencies: any[] = [];
 
-    for (const paramType of paramTypes) {
-      if (paramType && paramType.name !== 'Object') {
+    for (let i = 0; i < paramTypes.length; i++) {
+      const paramType = paramTypes[i];
+      
+      // Check if there's @Inject metadata for this parameter
+      if (injectMetadata && injectMetadata.constructor && injectMetadata.constructor[i] !== undefined) {
+        try {
+          dependencies.push(this.get(injectMetadata.constructor[i]));
+        } catch {
+          dependencies.push(undefined);
+        }
+      } else if (paramType && paramType.name !== 'Object') {
+        // Fallback to type name resolution
         try {
           dependencies.push(this.get(paramType.name));
         } catch {
@@ -162,10 +189,29 @@ export class DIContainer {
     
     // Register all providers from the module
     module.providers.forEach(provider => {
-      this.bind(provider.token, provider);
+      this.bindProvider(provider.token, provider);
     });
 
     return this;
+  }
+
+  /**
+   * Resolve token key from different token types
+   */
+  private resolveTokenKey(token: string | symbol | Function): string {
+    if (typeof token === 'string') {
+      return token; // "IUserService"
+    }
+    
+    if (typeof token === 'symbol') {
+      return token.toString(); // Symbol('UserService')
+    }
+    
+    if (typeof token === 'function') {
+      return token.name; // UserService.name -> "UserService"
+    }
+    
+    throw new Error('Invalid token type. Token must be string, symbol, or function');
   }
 
   /**

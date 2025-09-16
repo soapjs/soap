@@ -31,7 +31,6 @@ export class MemoryMonitor {
     }
   }
 
-  // Start monitoring
   start(): void {
     if (this.interval) {
       clearInterval(this.interval);
@@ -42,7 +41,6 @@ export class MemoryMonitor {
     }, this.config.interval);
   }
 
-  // Stop monitoring
   stop(): void {
     if (this.interval) {
       clearInterval(this.interval);
@@ -50,7 +48,6 @@ export class MemoryMonitor {
     }
   }
 
-  // Get current memory information
   getCurrentMemoryInfo(): MemoryInfo {
     const memUsage = process.memoryUsage();
     const totalMem = require('os').totalmem();
@@ -69,7 +66,6 @@ export class MemoryMonitor {
     };
   }
 
-  // Check memory and detect issues
   private checkMemory(): void {
     const current = this.getCurrentMemoryInfo();
     const previous = this.lastMemory;
@@ -78,22 +74,18 @@ export class MemoryMonitor {
     this.stats.lastCheck = Date.now();
     this.stats.uptime = process.uptime();
 
-    // Add to history
     this.stats.history.push({
       timestamp: Date.now(),
       memory: current,
       processUptime: process.uptime()
     });
 
-    // Keep only recent history
     if (this.stats.history.length > this.config.leakDetection.maxHistory) {
       this.stats.history = this.stats.history.slice(-this.config.leakDetection.maxHistory);
     }
 
-    // Check thresholds
     this.checkThresholds(current);
 
-    // Check for memory leaks
     if (this.config.leakDetection.enabled && previous) {
       this.checkMemoryLeak(current, previous);
     }
@@ -101,7 +93,6 @@ export class MemoryMonitor {
     this.lastMemory = current;
   }
 
-  // Check if memory exceeds thresholds
   private checkThresholds(current: MemoryInfo): void {
     const threshold = this.config.threshold;
     let exceeded = false;
@@ -131,7 +122,6 @@ export class MemoryMonitor {
     }
   }
 
-  // Check for memory leaks
   private checkMemoryLeak(current: MemoryInfo, previous: MemoryInfo): void {
     const growth = calculateMemoryGrowth(current, previous);
     const isGrowing = growth.percentage > this.config.leakDetection.growthThreshold;
@@ -235,7 +225,6 @@ export class MemoryMonitor {
     };
   }
 
-  // Update configuration
   updateConfig(newConfig: Partial<MemoryMonitoringConfig>): void {
     this.config = { ...this.config, ...newConfig };
     
@@ -246,12 +235,10 @@ export class MemoryMonitor {
     }
   }
 
-  // Get current configuration
   getConfig(): MemoryMonitoringConfig {
     return { ...this.config };
   }
 
-  // Cleanup
   destroy(): void {
     this.stop();
     this.stats.history = [];

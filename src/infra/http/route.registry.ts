@@ -75,7 +75,7 @@ export class RouteRegistry {
 
   /**
    * Retrieves all registered route groups.
-   *
+   *  
    * @returns {RouteGroup[]} An array of all registered route groups.
    */
   public getAllGroups(): RouteGroup[] {
@@ -118,6 +118,39 @@ export class RouteRegistry {
     path: string
   ): Route | undefined {
     return this.routes.get(path)?.get(`${method}`);
+  }
+
+  /**
+   * Removes a specific route from the registry.
+   *
+   * @param {RequestMethod | RequestMethod[]} method - The HTTP method of the route.
+   * @param {string} path - The path of the route.
+   * @returns {boolean} True if the route was removed, false if not found.
+   */
+  public removeRoute(
+    method: RequestMethod | RequestMethod[],
+    path: string
+  ): boolean {
+    const routeByMethod = this.routes.get(path);
+    if (routeByMethod) {
+      const removed = routeByMethod.delete(`${method}`);
+      // If no routes left for this path, remove the path entry
+      if (routeByMethod.size === 0) {
+        this.routes.delete(path);
+      }
+      return removed;
+    }
+    return false;
+  }
+
+  /**
+   * Removes a route group from the registry.
+   *
+   * @param {string} path - The path of the route group.
+   * @returns {boolean} True if the group was removed, false if not found.
+   */
+  public removeGroup(path: string): boolean {
+    return this.groups.delete(path);
   }
 
   /**

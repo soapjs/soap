@@ -1,14 +1,39 @@
-import { HttpAppPlugin, HealthCheckOptions, HealthCheck, HealthCheckResult, HealthCheckResponse, EnhancedPluginContext } from './plugin';
-import { HttpApp } from '../http-app';
-import { HttpRequest, HttpResponse } from '../types';
+import { HttpPlugin, HttpApp, HttpRequest, HttpResponse, RequestMethod } from '../types';
+import { Route } from '../route';
 
-export class HealthCheckPlugin implements HttpAppPlugin<any> {
+export interface HealthCheckOptions {
+  path?: string;
+  method?: RequestMethod;
+  checks?: HealthCheck[];
+  timeout?: number;
+  responseFormat?: 'json' | 'text';
+}
+
+export interface HealthCheck {
+  name: string;
+  check: () => Promise<HealthCheckResult> | HealthCheckResult;
+  timeout?: number;
+  critical?: boolean;
+}
+
+export interface HealthCheckResult {
+  status: 'healthy' | 'unhealthy' | 'degraded';
+  message?: string;
+  data?: any;
+  timestamp?: string;
+}
+
+export interface HealthCheckResponse {
+  status: 'ok' | 'error' | 'degraded';
+  timestamp: string;
+  uptime: number;
+  checks: Record<string, HealthCheckResult>;
+  version?: string;
+  environment?: string;
+}
+
+export class HealthCheckPlugin implements HttpPlugin {
   readonly name = 'health-check';
-  readonly version = '1.0.0';
-  readonly description = 'Basic health check plugin for SoapExpress';
-  readonly author = 'SoapJS Team';
-  readonly category = 'monitoring';
-  readonly tags = ['health', 'monitoring', 'status'];
 
   private options: HealthCheckOptions;
   private startTime: number;
@@ -16,6 +41,7 @@ export class HealthCheckPlugin implements HttpAppPlugin<any> {
   constructor(options: HealthCheckOptions = {}) {
     this.options = {
       path: '/health',
+      method: 'GET',
       timeout: 5000,
       responseFormat: 'json',
       checks: [],
@@ -24,51 +50,45 @@ export class HealthCheckPlugin implements HttpAppPlugin<any> {
     this.startTime = Date.now();
   }
 
-  install(app: any, context: EnhancedPluginContext, options?: any): void {
-    // Merge options
+  async install<Framework>(
+    app: HttpApp<Framework>,
+    options?: Record<string, any>
+  ): Promise<void> {
     if (options) {
       this.options = { ...this.options, ...options };
     }
 
-    // Add default health checks
     this.addDefaultHealthChecks();
-
-    // Register health check route
     this.registerHealthCheckRoute(app);
 
     console.log(`HealthCheck plugin installed with path: ${this.options.path}`);
   }
 
-  uninstall(app: HttpApp<any>): void {
-    // Remove health check route
-    const expressApp = app.getApp();
-    const routes = expressApp._router.stack;
-    
-    // Find and remove health check route
-    for (let i = routes.length - 1; i >= 0; i--) {
-      const route = routes[i];
-      if (route.route && route.route.path === this.options.path) {
-        routes.splice(i, 1);
-        break;
-      }
+  uninstall<Framework>(app: HttpApp<Framework>): void {
+    const { method, path } = this.options;
+    const routeRegistry = app.getRouteRegistry();
+    const removed = routeRegistry.removeRoute(method, path);
+
+    if (removed) {
+      console.log(`Health check route removed from path: ${path}`);
     }
 
     console.log(`HealthCheck plugin uninstalled`);
   }
 
-  beforeStart(app: HttpApp<any>): void {
+  beforeStart<Framework>(app: HttpApp<Framework>): void {
     console.log('HealthCheck plugin: Application starting...');
   }
 
-  afterStart(app: HttpApp<any>): void {
+  afterStart<Framework>(app: HttpApp<Framework>): void {
     console.log('HealthCheck plugin: Application started successfully');
   }
 
-  beforeStop(app: HttpApp<any>): void {
+  beforeStop<Framework>(app: HttpApp<Framework>): void {
     console.log('HealthCheck plugin: Application stopping...');
   }
 
-  afterStop(app: HttpApp<any>): void {
+  afterStop<Framework>(app: HttpApp<Framework>): void {
     console.log('HealthCheck plugin: Application stopped');
   }
 
@@ -144,10 +164,11 @@ export class HealthCheckPlugin implements HttpAppPlugin<any> {
     });
   }
 
-  private registerHealthCheckRoute(app: HttpApp<any>): void {
-    const expressApp = app.getApp();
+  private registerHealthCheckRoute(app: HttpApp): void {
+    const { method, path } = this.options;
     
-    expressApp.get(this.options.path!, async (req: HttpRequest, res: HttpResponse) => {
+    // Create health check handler
+    const healthCheckHandler = async (req: HttpRequest, res: HttpResponse) => {
       try {
         const healthResponse = await this.performHealthChecks();
         
@@ -177,7 +198,22 @@ export class HealthCheckPlugin implements HttpAppPlugin<any> {
         res.setHeader('Content-Type', 'application/json');
         res.status(503).json(errorResponse);
       }
-    });
+    };
+
+    // Create Route instance
+    const healthRoute = new Route(
+      method!,
+      path!,
+      healthCheckHandler,
+      {
+        cors: { origin: '*' },
+        logging: { level: 'info' }
+      }
+    );
+
+    // Register route using RouteRegistry
+    const routeRegistry = app.getRouteRegistry();
+    routeRegistry.register(healthRoute);
   }
 
   private async performHealthChecks(): Promise<HealthCheckResponse> {
@@ -297,6 +333,3 @@ export class HealthCheckPlugin implements HttpAppPlugin<any> {
     return text;
   }
 }
-
-// Export default instance
-export default HealthCheckPlugin;

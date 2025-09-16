@@ -1,29 +1,26 @@
 # Dependency Injection
 
-SoapJS provides a comprehensive dependency injection system with multiple approaches - from simple decorator-based injection to advanced CLI automation. The system is designed to be flexible, type-safe, and doesn't require external dependencies.
+SoapJS provides a comprehensive dependency injection system with **Inversify-style API**. The system is designed to be flexible, type-safe, and doesn't require external dependencies.
 
 ## Features
 
-- **Universal @Inject Decorator**: Single decorator for both constructor and property injection (NestJS-compatible)
-- **DI Namespace Tool**: Interactive `DI` namespace with all operations and autocomplete
-- **NestJS-style API**: `DI.registerClass(MyService)` - register by class with auto token
-- **Multiple Registration Methods**: Decorators, DI namespace, container.bind/get, factory pattern
+- **Inversify-style API**: `DI.bind('IUserService').toClass(UserService)` - clean and readable
+- **Multiple Token Types**: String, Symbol, Function (class/interface) tokens
+- **Universal @Inject Decorator**: Single decorator for both constructor and property injection
 - **NestJS-style Scopes**: Singleton, Transient, Request scopes
-- **CLI Automation**: Context-based dependency registration for CLI tools
-- **Type Safety**: Full TypeScript support with metadata reflection and overloads
-- **Module System**: Organize dependencies into modules
-- **Factory Pattern**: Support for factory-based dependency creation
-- **Backward Compatibility**: Legacy API still works alongside new features
+- **Type Safety**: Full TypeScript support with metadata reflection
 - **No External Dependencies**: Built-in implementation, no need for InversifyJS or similar
+- **Factory Pattern**: Support for factory-based dependency creation
+- **Module System**: Organize dependencies into modules
 
 ## Basic Usage
 
-### 1. DI Namespace Tool (Recommended)
+### 1. Inversify-style API (Recommended)
 
-The easiest way to use dependency injection is through the `DI` namespace:
+The cleanest way to use dependency injection is through the Inversify-style API:
 
 ```typescript
-import { DI, Injectable, Scope } from '@soapjs/soap';
+import { DI, Injectable, Inject, Scope } from '@soapjs/soap';
 
 // Mark classes as injectable
 @Injectable()
@@ -40,26 +37,36 @@ class EmailService {
   }
 }
 
-// Register services (NestJS-style API)
-DI.registerClass(UserRepository);                    // Auto token (class name)
-DI.registerClass(EmailService, { scope: Scope.TRANSIENT }); // With options
-DI.registerClass(UserService, 'CustomToken');        // With custom token
+@Injectable()
+class UserService {
+  constructor(
+    @Inject('IUserRepository') private userRepo: UserRepository,
+    @Inject('IEmailService') private emailService: EmailService
+  ) {}
+
+  async createUser(userData: CreateUserData): Promise<User> {
+    const user = await this.userRepo.save(userData);
+    await this.emailService.sendEmail(user.email, 'Welcome!');
+    return user;
+  }
+}
+
+// Registration with Inversify-style API
+DI.bind('IUserRepository').toClass(UserRepository);
+DI.bind('IEmailService').toClass(EmailService);
+DI.bind('IUserService').toClass(UserService);
 
 // Get services
-const userRepo = DI.get<UserRepository>('UserRepository');
-const emailService = DI.get<EmailService>('EmailService');
-const userService = DI.get<UserService>('CustomToken');
+const userService = DI.get<IUserService>('IUserService');
+const userRepo = DI.get<UserRepository>('IUserRepository');
 
 // Check if service exists
-if (DI.has('UserRepository')) {
-  console.log('UserRepository is registered');
+if (DI.has('IUserService')) {
+  console.log('UserService is registered');
 }
 
 // List all registered tokens
 console.log('Registered services:', DI.getTokens());
-
-// Get help
-DI.help(); // Shows all available operations
 ```
 
 ### 2. Marking Classes as Injectable
@@ -94,8 +101,8 @@ import { Injectable, Inject } from '@soapjs/soap';
 @Injectable()
 class CreateUserUseCase extends UseCase<User> {
   constructor(
-    @Inject('UserRepository') private userRepo: UserRepository,
-    @Inject('EmailService') private emailService: EmailService
+    @Inject('IUserRepository') private userRepo: UserRepository,
+    @Inject('IEmailService') private emailService: EmailService
   ) {
     super();
   }
@@ -117,10 +124,10 @@ import { Injectable, Inject } from '@soapjs/soap';
 
 @Injectable()
 class GetUserUseCase extends UseCase<User> {
-  @Inject('UserRepository')
+  @Inject('IUserRepository')
   private userRepo!: UserRepository;
 
-  @Inject('EmailService')
+  @Inject('IEmailService')
   private emailService!: EmailService;
 
   async execute(input: { id: string }): Promise<User> {
@@ -131,127 +138,82 @@ class GetUserUseCase extends UseCase<User> {
 
 ## Registration Methods
 
-### 1. DI Namespace (Recommended)
+### 1. Inversify-style API (Recommended)
 
 ```typescript
 import { DI, Scope } from '@soapjs/soap';
 
-// Register classes (NestJS-style API)
-DI.registerClass(UserRepositoryImpl);                    // Auto token
-DI.registerClass(EmailServiceImpl, { scope: Scope.TRANSIENT }); // With options
-DI.registerClass(UserService, 'CustomUserService');     // With custom token
-DI.registerClass(EmailService, Symbol('EmailService')); // With symbol token
+// Bind to classes
+DI.bind('IUserRepository').toClass(UserRepositoryImpl);
+DI.bind('IEmailService').toClass(EmailServiceImpl, { scope: Scope.TRANSIENT });
+DI.bind('IUserService').toClass(UserService);
 
-// Register values and factories
-DI.registerValue('AppConfig', { database: 'mongodb://localhost:27017/myapp' });
-DI.registerFactory('DatabaseConnection', (config) => new DatabaseConnection(config), {
-  scope: Scope.SINGLETON,
-  dependencies: ['AppConfig']
-});
+// Bind to interfaces
+DI.bind(IUserRepository).toInterface(UserRepositoryImpl);
+DI.bind(IEmailService).toInterface(EmailServiceImpl);
+
+// Bind to abstract classes
+DI.bind(AbstractUserService).toAbstract(ConcreteUserService);
+
+// Bind to values
+DI.bind('AppConfig').toValue({ database: 'mongodb://localhost:27017/myapp' });
+
+// Bind to factories
+DI.bind('DatabaseConnection').toFactory(
+  (config) => new DatabaseConnection(config), 
+  { 
+    scope: Scope.SINGLETON,
+    dependencies: ['AppConfig']
+  }
+);
+
+// Bind with symbol tokens
+DI.bind(Symbol('UserService')).toClass(UserService);
 
 // Get dependencies
-const userRepo = DI.get<UserRepository>('UserRepository');
+const userRepo = DI.get<IUserRepository>('IUserRepository');
 const config = DI.get('AppConfig');
-const userService = DI.get<UserService>('CustomUserService');
+const userService = DI.get<IUserService>('IUserService');
 
 // Management
 console.log('Registered tokens:', DI.getTokens());
-console.log('UserRepository exists:', DI.has('UserRepository'));
-DI.help(); // Show all available operations
+console.log('UserRepository exists:', DI.has('IUserRepository'));
 ```
 
-### 2. Decorator-based Auto-registration
+### 2. Token Types
+
+SoapJS supports multiple token types:
 
 ```typescript
-import { DI } from '@soapjs/soap';
+// String tokens
+DI.bind('IUserService').toClass(UserService);
 
-// Auto-register classes with @Injectable decorator
-DI.autoRegister(UserRepositoryImpl);
-DI.autoRegister(EmailServiceImpl);
-DI.autoRegister(CreateUserUseCase);
+// Symbol tokens
+DI.bind(Symbol('UserService')).toClass(UserService);
+
+// Interface tokens
+DI.bind(IUserService).toInterface(UserService);
+
+// Class tokens
+DI.bind(UserService).toClass(UserService);
+
+// Abstract class tokens
+DI.bind(AbstractUserService).toAbstract(ConcreteUserService);
 ```
 
-### 3. Legacy API (Backward Compatible)
+### 3. Scopes
 
 ```typescript
-import { registerClass, registerValue, registerFactory, get } from '@soapjs/soap';
+import { Scope } from '@soapjs/soap';
 
-// Register a class (legacy API)
-registerClass('UserRepository', UserRepositoryImpl, { scope: Scope.SINGLETON });
+// Singleton (default)
+DI.bind('UserService').toClass(UserService, { scope: Scope.SINGLETON });
 
-// Register a value
-registerValue('AppConfig', { database: 'mongodb://localhost:27017/myapp' });
+// Transient (new instance each time)
+DI.bind('UserService').toClass(UserService, { scope: Scope.TRANSIENT });
 
-// Register a factory
-registerFactory('DatabaseConnection', (config) => new DatabaseConnection(config), {
-  scope: Scope.SINGLETON,
-  dependencies: ['AppConfig']
-});
-
-// Get dependencies
-const userRepo = get<UserRepository>('UserRepository');
-const config = get('AppConfig');
-```
-
-### 4. Direct Container Usage
-
-```typescript
-import { DI, Scope } from '@soapjs/soap';
-
-// Access container directly
-DI.container.bindClass('UserRepository', UserRepositoryImpl, { scope: Scope.SINGLETON });
-DI.container.bindValue('AppConfig', { port: 3000 });
-DI.container.bindFactory('DatabaseConnection', (config) => new DatabaseConnection(config));
-
-// Get dependencies
-const userRepo = DI.container.get<UserRepository>('UserRepository');
-```
-
-## CLI Automation
-
-The DI system provides context-based automation for CLI tools:
-
-### Creating Dependency Contexts
-
-```typescript
-import { DI } from '@soapjs/soap';
-
-// Create contexts for different types of dependencies
-DI.createServiceContext('UserService', './services/user.service', ['UserRepository']);
-DI.createRepositoryContext('OrderRepository', './repositories/order.repository', []);
-DI.createUseCaseContext('PlaceOrderUseCase', './usecases/place-order.usecase', ['UserRepository', 'OrderRepository']);
-DI.createControllerContext('UserController', './controllers/user.controller', ['UserService']);
-DI.createMiddlewareContext('AuthMiddleware', './middleware/auth.middleware', ['AuthService']);
-```
-
-### Generating Registration Code
-
-```typescript
-import { DI } from '@soapjs/soap';
-
-// Generate registration code for all contexts
-const registrationCode = DI.generateRegistrationCode();
-console.log(registrationCode);
-
-// Generate module code
-const moduleCode = DI.generateModuleCode('AppModule');
-console.log(moduleCode);
-```
-
-### Module System
-
-```typescript
-import { DI, Module } from '@soapjs/soap';
-
-const userModule: Module = {
-  providers: [
-    { token: 'UserRepository', useClass: UserRepositoryImpl, scope: 'singleton' },
-    { token: 'UserService', useClass: UserService, scope: 'singleton' }
-  ],
-  exports: ['UserService']
-};
-
-DI.registerModule('UserModule', userModule);
+// Request (per-request instance)
+DI.bind('UserService').toClass(UserService, { scope: Scope.REQUEST });
 ```
 
 ## Advanced Features
@@ -261,21 +223,26 @@ DI.registerModule('UserModule', userModule);
 You can use custom tokens for dependency registration:
 
 ```typescript
-@Injectable({ token: 'PrimaryUserRepository' })
-class PrimaryUserRepository implements UserRepository {
-  // Implementation
-}
+// String tokens
+DI.bind('PrimaryUserRepository').toClass(PrimaryUserRepository);
+DI.bind('SecondaryUserRepository').toClass(SecondaryUserRepository);
 
-@Injectable({ token: 'SecondaryUserRepository' })
-class SecondaryUserRepository implements UserRepository {
-  // Implementation
-}
+// Symbol tokens
+const PRIMARY_REPO = Symbol('PrimaryUserRepository');
+const SECONDARY_REPO = Symbol('SecondaryUserRepository');
+
+DI.bind(PRIMARY_REPO).toClass(PrimaryUserRepository);
+DI.bind(SECONDARY_REPO).toClass(SecondaryUserRepository);
+
+// Interface tokens
+DI.bind(IUserRepository).toInterface(PrimaryUserRepository);
+DI.bind(IUserRepository).toInterface(SecondaryUserRepository);
 
 @Injectable()
 class UserService {
   constructor(
-    @Inject('PrimaryUserRepository') private primaryRepo: UserRepository,
-    @Inject('SecondaryUserRepository') private secondaryRepo: UserRepository
+    @Inject('PrimaryUserRepository') private primaryRepo: IUserRepository,
+    @Inject('SecondaryUserRepository') private secondaryRepo: IUserRepository
   ) {}
 }
 ```
@@ -287,11 +254,66 @@ Register dependencies using factory functions:
 ```typescript
 import { DI, Scope } from '@soapjs/soap';
 
-DI.registerFactory('DatabaseConnection', (config) => new DatabaseConnection(config), {
-  scope: Scope.SINGLETON,
-  dependencies: ['AppConfig']
-});
+// Traditional factory (only dependencies as arguments)
+DI.bind('DatabaseConnection').toFactory(
+  (config) => new DatabaseConnection(config), 
+  { 
+    scope: Scope.SINGLETON,
+    dependencies: ['AppConfig']
+  }
+);
+
+// Factory with DI container access
+DI.bind('DatabaseConnection').toFactory(
+  (container, config) => {
+    const logger = container.get('ILogger');
+    const cache = container.get('ICache');
+    return new DatabaseConnection(config, logger, cache);
+  },
+  { 
+    scope: Scope.SINGLETON,
+    dependencies: ['AppConfig'],
+    injectContainer: true // Enable container injection
+  }
+);
+
+DI.bind('Logger').toFactory(
+  () => new Logger(process.env.LOG_LEVEL || 'info'),
+  { scope: Scope.SINGLETON }
+);
 ```
+
+#### Factory with Container Access
+
+When `injectContainer: true` is set, the factory function receives the DI container as the first argument:
+
+```typescript
+// Factory with full DI access
+DI.bind('ComplexService').toFactory(
+  (container, config) => {
+    // Can access any registered dependency
+    const logger = container.get('ILogger');
+    const cache = container.get('ICache');
+    const db = container.get('IDatabase');
+    
+    // Can even register new services dynamically
+    container.bind('CustomService').toValue(new CustomService());
+    
+    return new ComplexService(config, logger, cache, db);
+  },
+  { 
+    dependencies: ['AppConfig'],
+    injectContainer: true
+  }
+);
+```
+
+**Benefits of container access:**
+- ✅ Access to all registered dependencies
+- ✅ Dynamic service registration
+- ✅ Complex dependency resolution
+- ✅ No need to pass all dependencies explicitly
+- ✅ Flexible factory logic
 
 ### Lifecycle Management
 
@@ -323,14 +345,14 @@ DI.clear();
 @Injectable()
 class UserService {
   constructor(
-    @Inject('UserRepository') private userRepo: UserRepository
+    @Inject('IUserRepository') private userRepo: UserRepository
   ) {}
 }
 
 // Avoid for required dependencies
 @Injectable()
 class UserService {
-  @Inject('UserRepository')
+  @Inject('IUserRepository')
   private userRepo!: UserRepository; // Non-null assertion needed
 }
 ```
@@ -340,10 +362,10 @@ class UserService {
 ```typescript
 @Injectable()
 class UserService {
-  @Inject('UserRepository')
+  @Inject('IUserRepository')
   private userRepo!: UserRepository;
 
-  @Inject('OptionalService')
+  @Inject('IOptionalService')
   private optionalService?: OptionalService; // Optional
 }
 ```
@@ -355,33 +377,33 @@ class UserService {
 import { DI } from '@soapjs/soap';
 
 // Register all dependencies before creating use cases
-DI.registerClass(UserRepositoryImpl);
-DI.registerClass(EmailServiceImpl);
-DI.registerValue('Config', appConfig);
+DI.bind('IUserRepository').toClass(UserRepositoryImpl);
+DI.bind('IEmailService').toClass(EmailServiceImpl);
+DI.bind('AppConfig').toValue(appConfig);
 ```
 
 ### 4. Use Meaningful Tokens
 
 ```typescript
 // Good - descriptive tokens
-@Inject('UserRepository')
-@Inject('EmailService')
-@Inject('DatabaseConnection')
+DI.bind('IUserRepository').toClass(UserRepositoryImpl);
+DI.bind('IEmailService').toClass(EmailServiceImpl);
+DI.bind('IDatabaseConnection').toClass(DatabaseConnection);
 
 // Avoid - generic tokens
-@Inject('repo1')
-@Inject('service')
-@Inject('db')
+DI.bind('repo1').toClass(UserRepositoryImpl);
+DI.bind('service').toClass(EmailServiceImpl);
+DI.bind('db').toClass(DatabaseConnection);
 ```
 
 ### 5. Use Appropriate Scopes
 
 ```typescript
 // Good - use singleton for stateless services
-DI.registerClass(UserService, { scope: Scope.SINGLETON });
+DI.bind('IUserService').toClass(UserService, { scope: Scope.SINGLETON });
 
 // Good - use transient for stateful use cases
-DI.registerClass(CreateUserUseCase, { scope: Scope.TRANSIENT });
+DI.bind('ICreateUserUseCase').toClass(CreateUserUseCase, { scope: Scope.TRANSIENT });
 
 // Or with decorators
 @Injectable({ scope: Scope.SINGLETON })
@@ -400,7 +422,7 @@ The DI system provides clear error messages for common issues:
 const service = DI.get('NonExistentService');
 
 // Error: Class UserService is not marked as @Injectable
-DI.autoRegister(UserService); // UserService missing @Injectable decorator
+DI.bind('UserService').toClass(UserService); // UserService missing @Injectable decorator
 ```
 
 ## Migration from External DI Libraries
@@ -414,29 +436,28 @@ import { injectable, inject } from 'inversify';
 @injectable()
 class UserService {
   constructor(
-    @inject('UserRepository') private userRepo: UserRepository
+    @inject('IUserRepository') private userRepo: UserRepository
   ) {}
 }
 ```
 
 ### After (SoapJS)
 ```typescript
-import { Injectable, DI } from '@soapjs/soap';
+import { Injectable, Inject, DI } from '@soapjs/soap';
 
 @Injectable()
 class UserService {
-  constructor(private userRepo: UserRepository) {}
+  constructor(
+    @Inject('IUserRepository') private userRepo: UserRepository
+  ) {}
 }
 
-// Register and use (NestJS-style API)
-DI.registerClass(UserRepositoryImpl);  // Auto token
-DI.registerClass(UserService);         // Auto token
-const userService = DI.get<UserService>('UserService');
+// Registration
+DI.bind('IUserRepository').toClass(UserRepositoryImpl);
+DI.bind('IUserService').toClass(UserService);
 
-// Or with custom tokens
-DI.registerClass(UserRepositoryImpl, 'UserRepository');
-DI.registerClass(UserService, 'UserService');
-const userService = DI.get<UserService>('UserService');
+// Usage
+const userService = DI.get<IUserService>('IUserService');
 ```
 
 The API is similar but more flexible, supporting both decorator-based and manual registration approaches.
@@ -471,50 +492,39 @@ npm install reflect-metadata
 
 ## Examples
 
-See the complete examples for different approaches:
+See the complete example for Inversify-style API:
 
-- **DI Namespace**: `examples/di-namespace-example.ts` - Shows the new DI namespace tool with all operations
-- **Enhanced DI System**: `examples/di-enhanced-example.ts` - Shows all registration methods and CLI automation
-- **Basic DI**: `examples/dependency-injection-example.ts` - Simple decorator-based approach
+- **Inversify-style API**: `examples/di-inversify-style-example.ts` - Shows the new Inversify-style API with all operations
 
 ## Quick Reference
 
-### DI Namespace Operations
+### DI Operations
 
 ```typescript
 import { DI } from '@soapjs/soap';
 
 // Registration
-DI.registerClass(MyService)                    // Auto token
-DI.registerClass(MyService, 'CustomToken')     // Custom token
-DI.registerClass(MyService, Symbol('Token'))   // Symbol token
-DI.registerClass(MyService, { scope: 'transient' }) // With options
-DI.registerValue('token', value)               // Register value
-DI.registerFactory('token', factory)           // Register factory
-DI.autoRegister(MyService)                     // Auto-register with decorators
-DI.registerModule('name', module)              // Register module
+DI.bind('IUserService').toClass(UserService)           // Bind to class
+DI.bind('Config').toValue({ port: 3000 })            // Bind to value
+DI.bind('Database').toFactory(() => new Database())  // Bind to factory
+DI.bind('Database').toFactory((container, config) => { // Factory with container access
+  const logger = container.get('ILogger');
+  return new Database(config, logger);
+}, { injectContainer: true })
+DI.bind(IUserService).toInterface(UserService)       // Bind interface to implementation
+DI.bind(AbstractService).toAbstract(ConcreteService)  // Bind abstract to implementation
+DI.bind(Symbol('Token')).toClass(MyService)          // Bind with symbol token
 
 // Retrieval
-DI.get('token')                                // Get dependency
-DI.has('token')                                // Check if exists
-
-// Context Creation
-DI.createServiceContext(name, path, deps?)     // Create service context
-DI.createRepositoryContext(name, path, deps?)  // Create repository context
-DI.createUseCaseContext(name, path, deps?)     // Create use case context
-DI.createControllerContext(name, path, deps?)  // Create controller context
-DI.createMiddlewareContext(name, path, deps?)  // Create middleware context
+DI.get('token')                                       // Get dependency
+DI.has('token')                                       // Check if exists
 
 // Management
-DI.registerAllContexts()                       // Register all contexts
-DI.generateRegistrationCode()                  // Generate registration code
-DI.generateModuleCode('name')                  // Generate module code
-DI.clear()                                     // Clear container
-DI.getTokens()                                 // List all tokens
-DI.getProvider('token')                        // Get provider info
-DI.help()                                      // Show help
+DI.clear()                                            // Clear container
+DI.getTokens()                                        // List all tokens
+DI.getProvider('token')                               // Get provider info
 
 // Access
-DI.container                                   // Access container instance
-DI.contextManager                              // Access context manager
+DI.container                                          // Access container instance
+DI.help()                                             // Show help
 ```

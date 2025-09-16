@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { DependencyContext, Provider, Module } from './di-types';
-import { DIContainer } from './di-container-enhanced';
+import { DependencyContext, Provider, Module, Scope } from './di-types';
+import { DIContainer } from './di-container';
 
 /**
  * Dependency context manager for CLI automation
@@ -30,7 +30,7 @@ export class DependencyContextManager {
       type: 'service',
       path,
       dependencies,
-      scope: 'singleton' as any
+      scope: 'singleton' as Scope
     };
   }
 
@@ -43,7 +43,7 @@ export class DependencyContextManager {
       type: 'repository',
       path,
       dependencies,
-      scope: 'singleton' as any
+      scope: 'singleton' as Scope
     };
   }
 
@@ -56,7 +56,7 @@ export class DependencyContextManager {
       type: 'usecase',
       path,
       dependencies,
-      scope: 'transient' as any
+      scope: 'transient' as Scope
     };
   }
 
@@ -69,7 +69,7 @@ export class DependencyContextManager {
       type: 'controller',
       path,
       dependencies,
-      scope: 'singleton' as any
+      scope: 'singleton' as Scope
     };
   }
 
@@ -82,7 +82,7 @@ export class DependencyContextManager {
       type: 'middleware',
       path,
       dependencies,
-      scope: 'singleton' as any
+      scope: 'singleton' as Scope
     };
   }
 
@@ -92,7 +92,7 @@ export class DependencyContextManager {
   generateProvider(context: DependencyContext): Provider {
     return {
       token: context.name,
-      useClass: this.getConstructorFromPath(context.path),
+      useClass: class Placeholder {}, // Placeholder - would be resolved by CLI
       scope: context.scope as any,
       dependencies: context.dependencies
     };
@@ -118,80 +118,13 @@ export class DependencyContextManager {
   registerAll(): this {
     this.contexts.forEach(context => {
       const provider = this.generateProvider(context);
-      this.container.bind(context.name, provider);
+      // Use internal bindProvider method
+      (this.container as any).bindProvider(context.name, provider);
     });
 
     return this;
   }
 
-  /**
-   * Get constructor from file path (placeholder - would be implemented by CLI)
-   */
-  private getConstructorFromPath(path: string): new (...args: any[]) => any {
-    // This would be implemented by the CLI to dynamically import and return the constructor
-    // For now, return a placeholder
-    return class Placeholder {};
-  }
-
-  /**
-   * Generate dependency registration code
-   */
-  generateRegistrationCode(contexts: DependencyContext[]): string {
-    const imports: string[] = [];
-    const registrations: string[] = [];
-
-    contexts.forEach(context => {
-      const importPath = this.getRelativeImportPath(context.path);
-      imports.push(`import { ${context.name} } from '${importPath}';`);
-      
-      registrations.push(
-        `container.bindClass('${context.name}', ${context.name}, { scope: '${context.scope}' });`
-      );
-    });
-
-    return [
-      '// Auto-generated dependency registration',
-      'import { container } from \'@soapjs/soap\';',
-      '',
-      ...imports,
-      '',
-      '// Register dependencies',
-      ...registrations,
-      ''
-    ].join('\n');
-  }
-
-  /**
-   * Generate module registration code
-   */
-  generateModuleCode(moduleName: string, contexts: DependencyContext[]): string {
-    const module = this.generateModule(moduleName, contexts);
-    
-    return [
-      `// Auto-generated module: ${moduleName}`,
-      'import { Module } from \'@soapjs/soap\';',
-      '',
-      `export const ${moduleName}Module: Module = {`,
-      '  providers: [',
-      ...module.providers.map(provider => 
-        `    { token: '${provider.token}', useClass: ${provider.useClass?.name || 'Unknown'}, scope: '${provider.scope}' },`
-      ),
-      '  ],',
-      '  exports: [',
-      ...(module.exports || []).map(exportToken => `    '${exportToken}',`),
-      '  ]',
-      '};',
-      ''
-    ].join('\n');
-  }
-
-  /**
-   * Get relative import path (placeholder)
-   */
-  private getRelativeImportPath(path: string): string {
-    // This would be implemented by the CLI to generate proper relative paths
-    return `./${path}`;
-  }
 
   /**
    * Get all contexts

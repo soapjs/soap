@@ -1,11 +1,26 @@
-import { HttpAppPluginManager } from '../plugin-manager';
-import { HttpAppPlugin } from '../plugin';
-import { HttpApp } from '../../http-app';
+import { HttpPluginManager } from '../http-plugin-manager';
+import { HttpPlugin } from '../types';
 
-const mockPlugin: HttpAppPlugin<any> = {
+const mockPlugin: HttpPlugin = {
   name: 'test-plugin',
   version: '1.0.0',
   install: jest.fn()
+};
+
+// Mock RouteRegistry
+const mockRouteRegistry = {
+  register: jest.fn(),
+  removeRoute: jest.fn(),
+  getRoutes: jest.fn(() => []),
+  clear: jest.fn()
+};
+
+// Mock MiddlewareRegistry
+const mockMiddlewareRegistry = {
+  register: jest.fn(),
+  unregister: jest.fn(),
+  getMiddlewares: jest.fn(() => []),
+  clear: jest.fn()
 };
 
 const mockApp = {
@@ -20,15 +35,29 @@ const mockApp = {
   listen: jest.fn(),
   getApp: jest.fn(),
   getRouter: jest.fn(),
-  getPluginManager: jest.fn()
+  getPluginManager: jest.fn(),
+  getRouteRegistry: () => mockRouteRegistry,
+  getMiddlewareRegistry: () => mockMiddlewareRegistry,
+  useMiddleware: jest.fn(),
+  getContainer: jest.fn(() => ({})),
+  start: jest.fn(),
+  stop: jest.fn(),
+  getServer: jest.fn(),
+  register: jest.fn(),
+  usePlugin: jest.fn(),
+  getPlugin: jest.fn(),
+  listPlugins: jest.fn(() => []),
+  isDevelopment: jest.fn(() => false),
+  isProduction: jest.fn(() => true),
+  isTest: jest.fn(() => false)
 } as any;
 
 describe('SoapExpressPluginManager - Minimal Tests', () => {
-  let pluginManager: HttpAppPluginManager<any>;
+  let pluginManager: HttpPluginManager;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    pluginManager = new HttpAppPluginManager<any>();
+    pluginManager = new HttpPluginManager();
   });
 
   describe('constructor', () => {

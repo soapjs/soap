@@ -1,11 +1,10 @@
-import { HttpApp } from "../http-app";
-import { HttpAppPlugin, PluginRegistry } from "./plugin";
+import { HttpApp, HttpPlugin, PluginRegistry } from "./types";
 
-export class HttpAppPluginRegistry<T> implements PluginRegistry<T> {
-  private plugins = new Map<string, HttpAppPlugin<T>>();
+export class HttpPluginRegistry implements PluginRegistry {
+  private plugins = new Map<string, HttpPlugin>();
   private installedPlugins = new Set<string>();
 
-  register(plugin: HttpAppPlugin<T>): void {
+  register(plugin: HttpPlugin): void {
     if (this.plugins.has(plugin.name)) {
       throw new Error(`Plugin '${plugin.name}' is already registered`);
     }
@@ -24,15 +23,15 @@ export class HttpAppPluginRegistry<T> implements PluginRegistry<T> {
     this.plugins.delete(pluginName);
   }
 
-  get(pluginName: string): HttpAppPlugin<T> | undefined {
+  get(pluginName: string): HttpPlugin | undefined {
     return this.plugins.get(pluginName);
   }
 
-  list(): HttpAppPlugin<T>[] {
+  list(): HttpPlugin[] {
     return Array.from(this.plugins.values());
   }
 
-  install(app: T, pluginName: string, options?: any): void {
+  async install<Framework = any>(app: HttpApp<Framework>, pluginName: string, options?: any): Promise<void> {
     const plugin = this.plugins.get(pluginName);
     if (!plugin) {
       throw new Error(`Plugin '${pluginName}' not found`);
@@ -46,17 +45,14 @@ export class HttpAppPluginRegistry<T> implements PluginRegistry<T> {
     this.checkDependencies(plugin);
 
     try {
-      // Mark as installed before calling install to prevent circular dependencies
       this.installedPlugins.add(pluginName);
       plugin.installed = true;
       plugin.enabled = true;
 
-      // Call plugin install method
-      plugin.install(app, options);
+      await plugin.install<Framework>(app, options);
 
       console.log(`Plugin '${pluginName}' installed successfully`);
     } catch (error) {
-      // Rollback on error
       this.installedPlugins.delete(pluginName);
       plugin.installed = false;
       plugin.enabled = false;
@@ -64,44 +60,18 @@ export class HttpAppPluginRegistry<T> implements PluginRegistry<T> {
     }
   }
 
-  uninstall(app: T, pluginName: string): void {
-    const plugin = this.plugins.get(pluginName);
-    if (!plugin) {
-      throw new Error(`Plugin '${pluginName}' not found`);
-    }
-
-    if (!this.installedPlugins.has(pluginName)) {
-      throw new Error(`Plugin '${pluginName}' is not installed`);
-    }
-
-    try {
-      // Call plugin uninstall method if it exists
-      if (plugin.uninstall) {
-        plugin.uninstall(app);
-      }
-
-      // Mark as uninstalled
-      this.installedPlugins.delete(pluginName);
-      plugin.installed = false;
-      plugin.enabled = false;
-
-      console.log(`Plugin '${pluginName}' uninstalled successfully`);
-    } catch (error) {
-      throw new Error(`Failed to uninstall plugin '${pluginName}': ${error.message}`);
-    }
-  }
 
   isInstalled(pluginName: string): boolean {
     return this.installedPlugins.has(pluginName);
   }
 
-  getInstalled(): HttpAppPlugin<any>[] {
+  getInstalled(): HttpPlugin[] {
     return Array.from(this.installedPlugins)
       .map(name => this.plugins.get(name))
-      .filter(Boolean) as HttpAppPlugin<any>[];
+      .filter(Boolean) as HttpPlugin[];
   }
 
-  private validatePlugin(plugin: HttpAppPlugin<any>): void {
+  private validatePlugin(plugin: HttpPlugin): void {
     if (!plugin.name || typeof plugin.name !== 'string') {
       throw new Error('Plugin must have a valid name');
     }
@@ -121,7 +91,7 @@ export class HttpAppPluginRegistry<T> implements PluginRegistry<T> {
     }
   }
 
-  private checkDependencies(plugin: HttpAppPlugin<any>): void {
+  private checkDependencies(plugin: HttpPlugin): void {
     if (!plugin.dependencies) {
       return;
     }

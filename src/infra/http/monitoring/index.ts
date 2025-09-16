@@ -1,4 +1,3 @@
-// Main monitoring exports
 export { MemoryMonitor } from './memory-monitor';
 export { 
   MemoryMonitoringMiddleware, 
@@ -6,7 +5,6 @@ export {
   createMemoryConfig 
 } from './middleware';
 
-// Types
 export type {
   MemoryInfo,
   MemoryLeakInfo,
@@ -16,7 +14,6 @@ export type {
   MemoryStats,
 } from './types';
 
-// Utilities
 export {
   parseMemoryThreshold,
   formatBytes,
