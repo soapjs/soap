@@ -11,11 +11,13 @@ SoapJS is a framework-agnostic toolkit that brings enterprise architecture patte
 ### Key Benefits
 
 - **Clean Architecture** - DDD, CQRS, Event Sourcing out of the box
+- **Three-Layer Architecture** - Domain, Data, and API layers with clear separation
 - **Framework Agnostic** - Works with Express, NestJS, Fastify, and more
 - **Database Agnostic** - MongoDB, PostgreSQL, MySQL, Redis support
 - **Type-Safe** - Full TypeScript support with generics
 - **Real-Time Ready** - WebSocket and event-driven patterns
 - **Event-Driven** - Built-in event bus and messaging patterns
+- **Plugin System** - Extensible HTTP plugins for security, metrics, monitoring
 - **Enterprise Features** - Security, audit logging, transaction management
 
 ## Quick Start
@@ -73,25 +75,32 @@ const activeUsers = await userRepo.find(
 
 ## Architecture Components
 
-SoapJS is built around several core components that work together to provide a complete Clean Architecture solution:
+SoapJS is built around three core layers that work together to provide a complete Clean Architecture solution:
 
 ### **Domain Layer**
 - **Entities** - Core business objects with identity (interfaces)
 - **Value Objects** - Immutable objects without identity
 - **Aggregates** - Clusters of related entities
 - **Domain Events** - Business events that occur in the domain
-
-### **Application Layer**
 - **Use Cases** - Application-specific business rules
 - **Commands & Queries** - CQRS pattern implementation
 - **Event Handlers** - Process domain events
 - **Transaction Management** - ACID transaction support
 
-### **Infrastructure Layer**
+### **Data Layer**
 - **Repositories** - Data access abstractions (ReadRepository, ReadWriteRepository)
 - **Event Bus** - Message broker integrations
-- **HTTP Routing** - Framework-agnostic routing
-- **WebSocket Support** - Real-time communication
+- **Database Sessions** - Transaction and connection management
+- **Mappers** - Data transformation between domain and persistence layers
+
+### **API Layer**
+- **HTTP Routing** - Framework-agnostic routing system
+- **WebSocket Support** - Real-time communication patterns
+- **HTTP Plugins** - Extensible plugin system for HTTP applications
+- **Security Middleware** - Built-in security features and protection
+- **Validation Middleware** - Request/response validation
+- **Metrics Collection** - Application performance monitoring
+- **Health Checks** - Application health monitoring and diagnostics
 
 ### **Repository Pattern**
 SoapJS provides base repository classes that you can extend to create your own implementations:
@@ -101,6 +110,42 @@ SoapJS provides base repository classes that you can extend to create your own i
 - **Custom Implementations** - Extend base classes for your specific needs
 
 Learn more in the [Repository Pattern Guide](docs/REPOSITORY-PATTERN.md).
+
+### **HTTP Plugins System**
+SoapJS provides a comprehensive plugin system for HTTP applications that extends functionality without modifying core code:
+
+- **Security Plugin** - CSRF protection, security headers, input sanitization, and security monitoring
+- **Metrics Plugin** - Application performance metrics collection with Prometheus format support
+- **Memory Monitoring Plugin** - Real-time memory usage tracking and alerts
+- **Health Check Plugin** - Application health monitoring with customizable health checks
+- **Ping Plugin** - Simple connectivity testing and uptime monitoring
+
+```typescript
+import { HttpApp, SecurityPlugin, MetricsPlugin, MemoryMonitoringPlugin } from '@soapjs/soap';
+
+const app = new HttpApp();
+
+// Add security features
+app.usePlugin(new SecurityPlugin({
+  enableCSRF: true,
+  enableSecurityHeaders: true,
+  enableInputSanitization: true,
+  exposeEndpoints: true
+}));
+
+// Add metrics collection
+app.usePlugin(new MetricsPlugin({
+  exposeEndpoint: true,
+  metricsPath: '/metrics',
+  metricsFormat: 'prometheus'
+}));
+
+// Add memory monitoring
+app.usePlugin(new MemoryMonitoringPlugin({
+  enableMonitoring: true,
+  alertThreshold: 0.8
+}));
+```
 
 ### **Cross-Cutting Concerns**
 - **Dependency Injection** - Service container
@@ -209,12 +254,14 @@ SoapJS is designed for applications that need:
 ## Current Status
 
 ### **Ready to Use**
-- **Core Framework** - Complete Clean Architecture implementation
+- **Core Framework** - Complete Clean Architecture implementation with three-layer architecture
+- **Domain Layer** - Entities, Value Objects, Aggregates, Use Cases, CQRS patterns
+- **Data Layer** - Repository pattern, Event Bus, Database sessions, Mappers
+- **API Layer** - HTTP routing, WebSocket support, Plugin system
+- **HTTP Plugins** - Security, Metrics, Memory Monitoring, Health Checks, Ping
 - **CQRS Pattern** - Full command/query separation with event sourcing
 - **Repository Pattern** - Base classes for custom implementations
 - **Event Bus** - Built-in event-driven messaging
-- **HTTP Routing** - Framework-agnostic routing system
-- **WebSocket Support** - Real-time communication patterns
 - **Transaction Management** - ACID transaction support
 - **Type-Safe Query Builder** - Database-agnostic querying
 - **Dependency Injection** - Service container and DI
@@ -397,8 +444,6 @@ For detailed information about creating custom repositories, see the [Repository
 ## Community
 
 - **[GitHub Discussions](https://github.com/soapjs/soap/discussions)** - Ask questions and share ideas
-- **[Discord](https://discord.gg/soapjs)** - Join our community
-- **[Blog](https://blog.soapjs.com)** - Architecture insights and best practices
 - **[YouTube](https://youtube.com/@soapjs)** - Video tutorials and demos
 
 ## License
