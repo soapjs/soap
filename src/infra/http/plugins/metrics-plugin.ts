@@ -4,6 +4,7 @@ import { MetricsMiddleware, createMetricsMiddleware, defaultMetricsConfig } from
 import { MetricsConfig, MetricsCollector } from '../metrics/types';
 import { Route } from '../route';
 import { Middleware } from '../../common';
+import { ConsoleLogger, Logger } from '../../../common';
 
 export interface MetricsPluginOptions extends MetricsConfig {
   /**
@@ -34,8 +35,9 @@ export class MetricsPlugin implements HttpPlugin {
   public config: MetricsPluginOptions;
   private metricsMiddleware: MetricsMiddleware;
   private startTime: number;
+  private logger: Logger;
 
-  constructor(options: Partial<MetricsPluginOptions> = {}) {
+  constructor(options: Partial<MetricsPluginOptions> = {}, logger?: Logger) {
     this.config = {
       exposeEndpoint: true,
       metricsPath: '/metrics',
@@ -48,6 +50,7 @@ export class MetricsPlugin implements HttpPlugin {
     this.collector = new BaseMetricsCollector(this.config);
     this.metricsMiddleware = createMetricsMiddleware(this.collector);
     this.startTime = Date.now();
+    this.logger = logger || new ConsoleLogger();
   }
 
   async install<Framework>(
@@ -73,7 +76,7 @@ export class MetricsPlugin implements HttpPlugin {
       this.registerSystemMetrics();
     }
 
-    console.log(`Metrics plugin installed with path: ${this.config.metricsPath}`);
+    this.logger.info(`Metrics plugin installed with path: ${this.config.metricsPath}`);
   }
 
   uninstall<Framework>(app: HttpApp<Framework>): void {
@@ -83,23 +86,46 @@ export class MetricsPlugin implements HttpPlugin {
       this.removeMetricsEndpoint(app);
     }
 
-    console.log(`Metrics plugin uninstalled`);
+    this.logger.info(`Metrics plugin uninstalled`);
   }
 
   beforeStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('Metrics plugin: Application starting...');
+    this.logger.debug('Metrics plugin: Application starting...');
   }
 
   afterStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('Metrics plugin: Application started successfully');
+    this.logger.debug('Metrics plugin: Application started successfully');
   }
 
   beforeStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('Metrics plugin: Application stopping...');
+    this.logger.debug('Metrics plugin: Application stopping...');
   }
 
   afterStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('Metrics plugin: Application stopped');
+    this.logger.debug('Metrics plugin: Application stopped');
+  }
+
+  async gracefulShutdown<Framework>(app: HttpApp<Framework>, signals?: string[]): Promise<void> {
+    const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
+    this.logger.debug(`Metrics plugin: Graceful shutdown initiated${signalText}`);
+    
+    try {
+      // Stop collecting metrics
+      this.collector.destroy();
+      
+      // Final metrics collection
+      const finalMetrics = await this.collectMetrics();
+      this.logger.debug('Metrics plugin: Final metrics collected:', {
+        uptime: finalMetrics.uptime,
+        memory: finalMetrics.memory,
+        timestamp: finalMetrics.timestamp
+      });
+      
+      this.logger.debug('Metrics plugin: Graceful shutdown completed');
+    } catch (error) {
+      this.logger.error('Metrics plugin: Error during graceful shutdown:', error);
+      this.logger.debug('Metrics plugin: Graceful shutdown completed with errors');
+    }
   }
 
   // Get the metrics collector for custom metrics
@@ -179,7 +205,7 @@ export class MetricsPlugin implements HttpPlugin {
     
     const removed = routeRegistry.removeRoute('GET', metricsPath);
     if (removed) {
-      console.log(`Metrics route removed from path: ${metricsPath}`);
+      this.logger.info(`Metrics route removed from path: ${metricsPath}`);
     }
   }
 

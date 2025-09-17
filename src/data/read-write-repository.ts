@@ -14,7 +14,6 @@ import {
   WebContext,
   SocketContext,
 } from "./repository-data-contexts";
-import { RepositoryMethodError } from "../domain/errors";
 import { ReadRepository } from "./read-repository";
 
 /**
@@ -46,24 +45,41 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
    *
    * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
    */
+  public async update(paramsOrQuery: UpdateParams<Partial<EntityType>> | RepositoryQuery): Promise<Result<UpdateStats>>;
+  
+  /**
+   * Updates entities in the data source.
+   *
+   * @param {Partial<EntityType>[]} entities The entities to be updated.
+   *
+   * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
+   */
+  public async update(...entities: Partial<EntityType>[]): Promise<Result<UpdateStats>>;
+  
   public async update(
-    paramsOrQuery: UpdateParams<Partial<EntityType>> | RepositoryQuery
+    paramsOrQueryOrEntity: UpdateParams<Partial<EntityType>> | RepositoryQuery | Partial<EntityType>,
+    ...moreEntities: Partial<EntityType>[]
   ): Promise<Result<UpdateStats>> {
     try {
       let query: any;
 
-      if (UpdateParams.isUpdateParams(paramsOrQuery)) {
-        const { updates, ...rest } = paramsOrQuery;
+      if (moreEntities.length > 0) {
+        const allEntities = [paramsOrQueryOrEntity, ...moreEntities];
+        const documents = allEntities.map((entity) =>
+          this.context.mapper.toModel(entity as EntityType)
+        );
+        query = { updates: documents };
+      } else if (UpdateParams.isUpdateParams(paramsOrQueryOrEntity)) {
+        const { updates, ...rest } = paramsOrQueryOrEntity;
         const documents = updates.map((update) =>
           this.context.mapper.toModel(update as EntityType)
         );
         query = { updates: documents, ...rest };
-      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
-        query = paramsOrQuery.build();
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQueryOrEntity)) {
+        query = paramsOrQueryOrEntity.build();
       } else {
-        throw new RepositoryMethodError(
-          "paramsOrQuery is neither a RepositoryQuery nor a UpdateParams"
-        );
+        const documents = [this.context.mapper.toModel(paramsOrQueryOrEntity as EntityType)];
+        query = { updates: documents };
       }
 
       const stats = await this.context.source.update(query);
@@ -81,7 +97,7 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
    *
    * @returns {Promise<Result<EntityType[]>>} The result of the add operation, containing the added entities or an error.
    */
-  public async add(entities: EntityType[]): Promise<Result<EntityType[]>> {
+  public async add(...entities: EntityType[]): Promise<Result<EntityType[]>> {
     try {
       const documents = entities.map((entity) =>
         this.context.mapper.toModel(entity)
@@ -104,20 +120,37 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
    *
    * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
    */
+  public async remove(paramsOrQuery: RemoveParams | RepositoryQuery): Promise<Result<RemoveStats>>;
+  
+  /**
+   * Removes entities from the data source.
+   *
+   * @param {EntityType[]} additionalEntities Additional entities to be removed.
+   *
+   * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
+   */
+  public async remove(...additionalEntities: EntityType[]): Promise<Result<RemoveStats>>;
+  
   public async remove(
-    paramsOrQuery: RemoveParams | RepositoryQuery
+    paramsOrQueryOrEntity: RemoveParams | RepositoryQuery | EntityType,
+    ...moreEntities: EntityType[]
   ): Promise<Result<RemoveStats>> {
     try {
       let query: any;
 
-      if (RemoveParams.isRemoveParams(paramsOrQuery)) {
-        query = paramsOrQuery;
-      } else if (RepositoryQuery.isQueryBuilder(paramsOrQuery)) {
-        query = paramsOrQuery.build();
-      } else {
-        throw new RepositoryMethodError(
-          "paramsOrQuery is neither a RepositoryQuery nor a RemoveParams"
+      if (moreEntities.length > 0) {
+        const allEntities = [paramsOrQueryOrEntity as EntityType, ...moreEntities];
+        const documents = allEntities.map((entity) =>
+          this.context.mapper.toModel(entity)
         );
+        query = { entities: documents };
+      } else if (RemoveParams.isRemoveParams(paramsOrQueryOrEntity)) {
+        query = paramsOrQueryOrEntity;
+      } else if (RepositoryQuery.isQueryBuilder(paramsOrQueryOrEntity)) {
+        query = paramsOrQueryOrEntity.build();
+      } else {
+        const documents = [this.context.mapper.toModel(paramsOrQueryOrEntity as EntityType)];
+        query = { entities: documents };
       }
 
       const stats = await this.context.source.remove(query);
@@ -133,4 +166,4 @@ export const isReadWriteRepository = <T = unknown>(
   value: unknown
 ): value is ReadWriteRepository<T> => {
   return typeof value === "object" && Object.hasOwn(value, "context");
-}; 
+};

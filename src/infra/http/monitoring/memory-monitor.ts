@@ -189,7 +189,7 @@ export class MemoryMonitor {
   forceGC(): void {
     if (global.gc) {
       global.gc();
-      console.log('Forced garbage collection');
+      console.debug('Forced garbage collection');
     } else {
       console.warn('Garbage collection not available. Run with --expose-gc flag');
     }

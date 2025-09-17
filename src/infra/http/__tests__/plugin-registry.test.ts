@@ -1,5 +1,6 @@
 import { HttpPluginRegistry } from '../http-plugin-registry';
 import { HttpPlugin } from '../types';
+import { Logger } from '../../../common';
 
 // Mock RouteRegistry
 const mockRouteRegistry = {
@@ -15,6 +16,17 @@ const mockMiddlewareRegistry = {
   unregister: jest.fn(),
   getMiddlewares: jest.fn(() => []),
   clear: jest.fn()
+};
+
+// Mock Logger
+const mockLogger: Logger = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn(),
+  http: jest.fn(),
+  verbose: jest.fn(),
+  debug: jest.fn()
 };
 
 // Mock HttpApp
@@ -59,7 +71,7 @@ describe('HttpAppPluginRegistry', () => {
   let registry: HttpPluginRegistry;
 
   beforeEach(() => {
-    registry = new HttpPluginRegistry();
+    registry = new HttpPluginRegistry(mockLogger);
     jest.clearAllMocks();
   });
 
@@ -192,17 +204,13 @@ describe('HttpAppPluginRegistry', () => {
       const plugin = createMockPlugin('test-plugin');
       registry.register(plugin);
       
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       await registry.install(mockHttpApp, 'test-plugin');
       
       expect(plugin.install).toHaveBeenCalledWith(mockHttpApp, undefined);
       expect(plugin.installed).toBe(true);
       expect(plugin.enabled).toBe(true);
       expect(registry.isInstalled('test-plugin')).toBe(true);
-      expect(consoleSpy).toHaveBeenCalledWith("Plugin 'test-plugin' installed successfully");
-      
-      consoleSpy.mockRestore();
+      expect(mockLogger.info).toHaveBeenCalledWith("Plugin 'test-plugin' installed successfully");
     });
 
     it('should install a plugin with options', async () => {

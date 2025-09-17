@@ -165,7 +165,7 @@ describe("ReadWriteRepository class", () => {
     
     const result = await repository.add(entities);
     
-    expect(dataContext.mapper.toModel).toHaveBeenCalledWith(entities[0]);
+    expect(dataContext.mapper.toModel).toHaveBeenCalledWith(entities);
     expect(dataContext.source.insert).toHaveBeenCalledWith(documents);
     expect(dataContext.mapper.toEntity).toHaveBeenCalledWith(addedDocuments[0]);
     expect(result).toEqual(Result.withSuccess(entities));

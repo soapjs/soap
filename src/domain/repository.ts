@@ -75,12 +75,20 @@ export abstract class Repository<
   ): Promise<Result<UpdateStats>>;
 
   /**
+   * Updates entities based on the provided parameters or query builder.
+   * @abstract
+   * @param {Partial<EntityType>[]} entities - An array of partial entities to be updated.
+   * @returns {Promise<Result<UpdateStats>>} A promise that resolves to the update statistics.
+   */
+  abstract update(...entities: Partial<EntityType>[]): Promise<Result<UpdateStats>>;
+
+  /**
    * Adds entities to the repository.
    * @abstract
    * @param {EntityType[]} entities - An array of entities to be added.
    * @returns {Promise<Result<EntityType[]>>} A promise that resolves to an array of added entities.
    */
-  abstract add(entities: EntityType[]): Promise<Result<EntityType[]>>;
+  abstract add(...entities: EntityType[]): Promise<Result<EntityType[]>>;
 
   /**
    * Removes entities based on the provided parameters or query builder.
@@ -91,4 +99,12 @@ export abstract class Repository<
   abstract remove(
     paramsOrQuery: RemoveParams | RepositoryQuery
   ): Promise<Result<RemoveStats>>;
+  
+  /**
+   * Removes entities based on the provided parameters or query builder.
+   * @abstract
+   * @param {EntityType[]} entities - An array of entities to be removed.
+   * @returns {Promise<Result<RemoveStats>>} A promise that resolves to the remove statistics.
+   */
+  abstract remove(...entities: EntityType[]): Promise<Result<RemoveStats>>;
 }

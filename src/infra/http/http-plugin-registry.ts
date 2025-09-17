@@ -1,9 +1,14 @@
+import { ConsoleLogger, Logger } from "../../common";
 import { HttpApp, HttpPlugin, PluginRegistry } from "./types";
 
 export class HttpPluginRegistry implements PluginRegistry {
   private plugins = new Map<string, HttpPlugin>();
   private installedPlugins = new Set<string>();
+  private logger: Logger;
 
+  constructor(logger?: Logger) {
+    this.logger = logger || new ConsoleLogger();
+  }
   register(plugin: HttpPlugin): void {
     if (this.plugins.has(plugin.name)) {
       throw new Error(`Plugin '${plugin.name}' is already registered`);
@@ -51,7 +56,7 @@ export class HttpPluginRegistry implements PluginRegistry {
 
       await plugin.install<Framework>(app, options);
 
-      console.log(`Plugin '${pluginName}' installed successfully`);
+      this.logger.info(`Plugin '${pluginName}' installed successfully`);
     } catch (error) {
       this.installedPlugins.delete(pluginName);
       plugin.installed = false;
@@ -80,14 +85,14 @@ export class HttpPluginRegistry implements PluginRegistry {
       throw new Error('Plugin must have a valid version');
     }
 
-    if (!plugin.install || typeof plugin.install !== 'function') {
-      throw new Error('Plugin must implement install method');
+    // Validate semantic versioning format
+    const semverRegex = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+    if (!semverRegex.test(plugin.version)) {
+      throw new Error('Plugin version must follow semantic versioning format');
     }
 
-    // Validate version format (semantic versioning)
-    const versionRegex = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-    if (!versionRegex.test(plugin.version)) {
-      throw new Error('Plugin version must follow semantic versioning format');
+    if (!plugin.install || typeof plugin.install !== 'function') {
+      throw new Error('Plugin must implement install method');
     }
   }
 

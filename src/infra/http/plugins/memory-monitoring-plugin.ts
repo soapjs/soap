@@ -11,6 +11,7 @@ import {
 } from '../monitoring';
 import { Route } from '../route';
 import { Middleware } from '../../common';
+import { ConsoleLogger, Logger } from '../../../common';
 
 export interface MemoryMonitoringPluginOptions extends Partial<MemoryMonitoringConfig> {
   /**
@@ -46,8 +47,9 @@ export class MemoryMonitoringPlugin implements HttpPlugin {
   private memoryMiddleware: MemoryMonitoringMiddleware;
   public config: MemoryMonitoringPluginOptions;
   private startTime: number;
+  private logger: Logger;
 
-  constructor(options: Partial<MemoryMonitoringPluginOptions> = {}) {
+  constructor(options: Partial<MemoryMonitoringPluginOptions> = {}, logger?: Logger) {
     this.config = {
       exposeEndpoints: true,
       basePath: '/memory',
@@ -57,7 +59,7 @@ export class MemoryMonitoringPlugin implements HttpPlugin {
       ...defaultMemoryConfig,
       ...options
     };
-    
+    this.logger = logger || new ConsoleLogger();
     // Ensure all required properties are present for MemoryMonitor
     const monitorConfig: MemoryMonitoringConfig = {
       enabled: this.config.enabled ?? defaultMemoryConfig.enabled,
@@ -104,7 +106,7 @@ export class MemoryMonitoringPlugin implements HttpPlugin {
       this.registerMemoryEndpoints(app);
     }
 
-    console.log(`MemoryMonitoring plugin installed with base path: ${this.config.basePath}`);
+    this.logger.info(`MemoryMonitoring plugin installed with base path: ${this.config.basePath}`);
   }
 
   uninstall<Framework>(app: HttpApp<Framework>): void {
@@ -117,23 +119,53 @@ export class MemoryMonitoringPlugin implements HttpPlugin {
       this.removeMemoryEndpoints(app);
     }
 
-    console.log(`MemoryMonitoring plugin uninstalled`);
+    this.logger.info(`MemoryMonitoring plugin uninstalled`);
   }
 
   beforeStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('MemoryMonitoring plugin: Application starting...');
+    this.logger.debug('MemoryMonitoring plugin: Application starting...');
   }
 
   afterStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('MemoryMonitoring plugin: Application started successfully');
+    this.logger.debug('MemoryMonitoring plugin: Application started successfully');
   }
 
   beforeStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('MemoryMonitoring plugin: Application stopping...');
+    this.logger.debug('MemoryMonitoring plugin: Application stopping...');
   }
 
   afterStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('MemoryMonitoring plugin: Application stopped');
+    this.logger.debug('MemoryMonitoring plugin: Application stopped');
+  }
+
+  async gracefulShutdown<Framework>(app: HttpApp<Framework>, signals?: string[]): Promise<void> {
+    const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
+    this.logger.debug(`MemoryMonitoring plugin: Graceful shutdown initiated${signalText}`);
+    
+    try {
+      // Stop monitoring
+      this.monitor.destroy();
+      
+      // Cleanup auto GC interval if it exists
+      if ((this as any).autoGCInterval) {
+        clearInterval((this as any).autoGCInterval);
+        (this as any).autoGCInterval = null;
+      }
+      
+      // Final memory stats
+      const finalStats = this.monitor.getStats();
+      this.logger.debug('MemoryMonitoring plugin: Final memory stats:', {
+        heapUsed: finalStats.current?.heapUsed,
+        rss: finalStats.current?.rss,
+        percentage: finalStats.current?.percentage,
+        timestamp: new Date().toISOString()
+      });
+      
+        this.logger.debug('MemoryMonitoring plugin: Graceful shutdown completed');
+    } catch (error) {
+      this.logger.error('MemoryMonitoring plugin: Error during graceful shutdown:', error);
+      this.logger.debug('MemoryMonitoring plugin: Graceful shutdown completed with errors');
+    }
   }
 
   // Get the memory monitor instance
@@ -201,11 +233,11 @@ export class MemoryMonitoringPlugin implements HttpPlugin {
       try {
         const summary = this.monitor.getSummary();
         if (summary && summary.status === 'critical' && summary.current && summary.current.percentage > this.config.gcThreshold!) {
-          console.log(`Auto GC triggered at ${summary.current.percentage.toFixed(2)}% memory usage`);
+          this.logger.debug(`Auto GC triggered at ${summary.current.percentage.toFixed(2)}% memory usage`);
           this.monitor.forceGC();
         }
       } catch (error) {
-        console.warn('Error in auto GC check:', error.message);
+        this.logger.warn('Error in auto GC check:', error.message);
       }
     }, 10000); // Check every 10 seconds
 
@@ -392,7 +424,7 @@ export class MemoryMonitoringPlugin implements HttpPlugin {
     endpoints.forEach(({ method, path }) => {
       const removed = routeRegistry.removeRoute(method as RequestMethod, path);
       if (removed) {
-        console.log(`Memory monitoring route removed: ${method} ${path}`);
+        this.logger.info(`Memory monitoring route removed: ${method} ${path}`);
       }
     });
   }

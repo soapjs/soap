@@ -55,7 +55,7 @@ export const readEnvFile = <Environment = object>(envPath?: string): Environment
     );
     return env as Environment;
   } catch (error) {
-    console.log(error);
+    console.error('Error parsing environment configuration:', error);
     return {} as Environment;
   }
 };

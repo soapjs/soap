@@ -636,6 +636,7 @@ export interface PluginLifecycle {
   afterStart?<Framework>(app: HttpApp<Framework>): void;
   beforeStop?<Framework>(app: HttpApp<Framework>): void;
   afterStop?<Framework>(app: HttpApp<Framework>): void;
+  gracefulShutdown?<Framework>(app: HttpApp<Framework>, signals?: string[]): Promise<void>;
 }
 
 export interface PluginMetadata {
@@ -679,6 +680,7 @@ export interface PluginManager {
 export interface HttpApp<Framework = any> {
   start(port: number): Promise<void>;
   stop(): Promise<void>;
+  gracefulShutdown(signals?: string[]): Promise<void>;
   getApp(): Framework;
   getServer<T>(): T;
   getRouteRegistry(): RouteRegistry;

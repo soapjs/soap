@@ -1,4 +1,5 @@
 import { HealthCheckPlugin, HealthCheckOptions } from '../health-check-plugin';
+import { Logger } from '../../../../common';
 
 // Mock RouteRegistry
 const mockRouteRegistry = {
@@ -14,6 +15,17 @@ const mockExpressApp = {
   _router: {
     stack: []
   }
+};
+
+// Mock Logger
+const mockLogger: Logger = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn(),
+  http: jest.fn(),
+  verbose: jest.fn(),
+  debug: jest.fn()
 };
 
 // Mock HttpApp
@@ -40,17 +52,20 @@ describe('HealthCheckPlugin', () => {
   let options: HealthCheckOptions;
 
   beforeEach(() => {
+    // Reset all mocks
+    jest.clearAllMocks();
+    
     options = {
       path: '/health',
       timeout: 5000,
       responseFormat: 'json'
     };
-    plugin = new HealthCheckPlugin(options);
+    plugin = new HealthCheckPlugin(options, mockLogger);
   });
 
   describe('constructor', () => {
     it('should initialize with default options', () => {
-      const defaultPlugin = new HealthCheckPlugin();
+      const defaultPlugin = new HealthCheckPlugin({}, mockLogger);
       
       expect(defaultPlugin.name).toBe('health-check');
     });
@@ -62,7 +77,7 @@ describe('HealthCheckPlugin', () => {
         responseFormat: 'text'
       };
       
-      const customPlugin = new HealthCheckPlugin(customOptions);
+      const customPlugin = new HealthCheckPlugin(customOptions, mockLogger);
       
       expect(customPlugin['options'].path).toBe('/custom-health');
       expect(customPlugin['options'].timeout).toBe(10000);
@@ -148,43 +163,27 @@ describe('HealthCheckPlugin', () => {
 
   describe('lifecycle hooks', () => {
     it('should call beforeStart hook', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       plugin.beforeStart?.(mockHttpApp);
       
-      expect(consoleSpy).toHaveBeenCalledWith('HealthCheck plugin: Application starting...');
-      
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('HealthCheck plugin: Application starting...');
     });
 
     it('should call afterStart hook', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       plugin.afterStart?.(mockHttpApp);
       
-      expect(consoleSpy).toHaveBeenCalledWith('HealthCheck plugin: Application started successfully');
-      
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('HealthCheck plugin: Application started successfully');
     });
 
     it('should call beforeStop hook', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       plugin.beforeStop?.(mockHttpApp);
       
-      expect(consoleSpy).toHaveBeenCalledWith('HealthCheck plugin: Application stopping...');
-      
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('HealthCheck plugin: Application stopping...');
     });
 
     it('should call afterStop hook', () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      
       plugin.afterStop?.(mockHttpApp);
       
-      expect(consoleSpy).toHaveBeenCalledWith('HealthCheck plugin: Application stopped');
-      
-      consoleSpy.mockRestore();
+      expect(mockLogger.debug).toHaveBeenCalledWith('HealthCheck plugin: Application stopped');
     });
   });
 

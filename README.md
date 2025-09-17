@@ -298,6 +298,7 @@ interface User extends Entity {
 ```typescript
 import { UseCase, ReadWriteRepository, Result } from '@soapjs/soap';
 
+@Injectable()
 class CreateUserUseCase extends UseCase<User> {
   constructor(
     @Inject('UserRepository')

@@ -1,5 +1,6 @@
 import { HttpPlugin, HttpApp, HttpRequest, HttpResponse, RequestMethod } from '../types';
 import { Route } from '../route';
+import { ConsoleLogger, Logger } from '../../../common';
 
 export interface HealthCheckOptions {
   path?: string;
@@ -37,8 +38,9 @@ export class HealthCheckPlugin implements HttpPlugin {
 
   private options: HealthCheckOptions;
   private startTime: number;
+  private logger: Logger;
 
-  constructor(options: HealthCheckOptions = {}) {
+  constructor(options: HealthCheckOptions = {}, logger?: Logger) {
     this.options = {
       path: '/health',
       method: 'GET',
@@ -48,6 +50,7 @@ export class HealthCheckPlugin implements HttpPlugin {
       ...options
     };
     this.startTime = Date.now();
+    this.logger = logger || new ConsoleLogger();
   }
 
   async install<Framework>(
@@ -61,7 +64,7 @@ export class HealthCheckPlugin implements HttpPlugin {
     this.addDefaultHealthChecks();
     this.registerHealthCheckRoute(app);
 
-    console.log(`HealthCheck plugin installed with path: ${this.options.path}`);
+    this.logger.info(`HealthCheck plugin installed with path: ${this.options.path}`);
   }
 
   uninstall<Framework>(app: HttpApp<Framework>): void {
@@ -70,26 +73,35 @@ export class HealthCheckPlugin implements HttpPlugin {
     const removed = routeRegistry.removeRoute(method, path);
 
     if (removed) {
-      console.log(`Health check route removed from path: ${path}`);
+      this.logger.info(`Health check route removed from path: ${path}`);
     }
 
-    console.log(`HealthCheck plugin uninstalled`);
+    this.logger.info(`HealthCheck plugin uninstalled`);
   }
 
   beforeStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('HealthCheck plugin: Application starting...');
+    this.logger.debug('HealthCheck plugin: Application starting...');
   }
 
   afterStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('HealthCheck plugin: Application started successfully');
+    this.logger.debug('HealthCheck plugin: Application started successfully');
   }
 
   beforeStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('HealthCheck plugin: Application stopping...');
+    this.logger.debug('HealthCheck plugin: Application stopping...');
   }
 
   afterStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('HealthCheck plugin: Application stopped');
+    this.logger.debug('HealthCheck plugin: Application stopped');
+  }
+
+  async gracefulShutdown<Framework>(app: HttpApp<Framework>, signals?: string[]): Promise<void> {
+    const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
+    this.logger.debug(`HealthCheck plugin: Graceful shutdown initiated${signalText}`);
+    
+    // Health check plugin doesn't need special cleanup
+    // Just log the shutdown
+    this.logger.debug('HealthCheck plugin: Graceful shutdown completed');
   }
 
   // Add a custom health check

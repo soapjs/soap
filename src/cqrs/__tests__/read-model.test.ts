@@ -163,7 +163,7 @@ describe('Read Model Pattern', () => {
       (context.source.insert as jest.Mock).mockResolvedValue([readModel]);
       (context.source.find as jest.Mock).mockResolvedValue([readModel]);
       
-      const saveResult = await repository.add([readModel]);
+      const saveResult = await repository.add(readModel);
       expect(saveResult.isSuccess()).toBe(true);
       
       const findResult = await repository.find({ where: new Where().valueOf('id').isEq('test-id') });
@@ -194,7 +194,7 @@ describe('Read Model Pattern', () => {
       (context.source.remove as jest.Mock).mockResolvedValue({ deletedCount: 1 });
       (context.source.find as jest.Mock).mockResolvedValue([]);
       
-      await repository.add([readModel]);
+      await repository.add(readModel);
       
       const deleteResult = await repository.remove({ where: new Where().valueOf('id').isEq('test-id') });
       expect(deleteResult.isSuccess()).toBe(true);
@@ -217,7 +217,7 @@ describe('Read Model Pattern', () => {
       (context.source.insert as jest.Mock).mockResolvedValue([readModel1, readModel2]);
       (context.source.count as jest.Mock).mockResolvedValue(2);
       
-      await repository.add([readModel1, readModel2]);
+      await repository.add(readModel1, readModel2);
       
       const countResult = await repository.count();
       

@@ -1,14 +1,16 @@
 import { HttpPlugin, HttpApp, HttpRequest, HttpResponse } from '../types';
 import { Route } from '../route';
+import { ConsoleLogger, Logger } from '../../../common';
 
 export class PingPlugin implements HttpPlugin {
   readonly name = 'ping';
+  private logger: Logger;
 
-  async install<Framework>(app: HttpApp<Framework>): Promise<void> {
-    
+  async install<Framework>(app: HttpApp<Framework>, logger?: Logger): Promise<void> {
+    this.logger = logger || new ConsoleLogger();
     this.registerPingRoute(app);
 
-    console.log(`Ping plugin installed with path: /ping`);
+    this.logger.info(`Ping plugin installed with path: /ping`);
   }
 
   uninstall<Framework>(app: HttpApp<Framework>): void {
@@ -16,26 +18,35 @@ export class PingPlugin implements HttpPlugin {
     const removed = routeRegistry.removeRoute('GET', '/ping');
 
     if (removed) {
-      console.log(`Ping route removed from path: /ping`);
+      this.logger.info(`Ping route removed from path: /ping`);
     }
 
-    console.log(`Ping plugin uninstalled`);
+    this.logger.info(`Ping plugin uninstalled`);
   }
 
   beforeStart<Framework>(app: HttpApp<Framework>): void {
-    console.log(`Ping plugin: Application starting...`);
+    this.logger.debug(`Ping plugin: Application starting...`);
   }
 
   afterStart<Framework>(app: HttpApp<Framework>): void {
-    console.log(`Ping plugin: Application started successfully`);
+    this.logger.debug(`Ping plugin: Application started successfully`);
   }
 
   beforeStop<Framework>(app: HttpApp<Framework>): void {
-    console.log(`Ping plugin: Application stopping...`);
+    this.logger.debug(`Ping plugin: Application stopping...`);
   }
 
   afterStop<Framework>(app: HttpApp<Framework>): void {
-    console.log(`Ping plugin: Application stopped`);
+    this.logger.debug(`Ping plugin: Application stopped`);
+  }
+
+  async gracefulShutdown<Framework>(app: HttpApp<Framework>, signals?: string[]): Promise<void> {
+    const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
+    this.logger.debug(`Ping plugin: Graceful shutdown initiated${signalText}`);
+    
+    // Ping plugin doesn't need special cleanup
+    // Just log the shutdown
+    this.logger.debug('Ping plugin: Graceful shutdown completed');
   }
 
   private registerPingRoute(app: HttpApp): void {

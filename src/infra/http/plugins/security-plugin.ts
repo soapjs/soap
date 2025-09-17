@@ -8,6 +8,7 @@ import {
 } from '../security';
 import { Route } from '../route';
 import { Middleware } from '../../common';
+import { ConsoleLogger, Logger } from '../../../common';
 
 export interface SecurityPluginOptions extends SecurityConfig {
   /**
@@ -39,8 +40,9 @@ export class SecurityPlugin implements HttpPlugin {
   private startTime: number;
   private violationCount: number = 0;
   private monitoringInterval?: NodeJS.Timeout;
+  private logger: Logger;
 
-  constructor(options: Partial<SecurityPluginOptions> = {}) {
+  constructor(options: Partial<SecurityPluginOptions> = {}, logger?: Logger) {
     this.config = {
       exposeEndpoints: true,
       endpointsPath: '/security',
@@ -48,7 +50,7 @@ export class SecurityPlugin implements HttpPlugin {
       ...defaultSecurityConfig,
       ...options
     };
-    
+    this.logger = logger || new ConsoleLogger();
     this.securityMiddleware = createSecurityMiddleware(this.config);
     this.startTime = Date.now();
   }
@@ -81,7 +83,7 @@ export class SecurityPlugin implements HttpPlugin {
       this.enableSecurityMonitoring();
     }
 
-    console.log(`Security plugin installed with endpoints at: ${this.config.endpointsPath}`);
+    this.logger.info(`Security plugin installed with endpoints at: ${this.config.endpointsPath}`);
   }
 
   uninstall<Framework>(app: HttpApp<Framework>): void {
@@ -99,23 +101,49 @@ export class SecurityPlugin implements HttpPlugin {
       this.monitoringInterval = undefined;
     }
 
-    console.log('Security plugin uninstalled');
+    this.logger.info('Security plugin uninstalled');
   }
 
   beforeStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('Security plugin: Application starting with security enabled...');
+    this.logger.debug('Security plugin: Application starting with security enabled...');
   }
 
   afterStart<Framework>(app: HttpApp<Framework>): void {
-    console.log('Security plugin: Application started with security protection active');
+    this.logger.debug('Security plugin: Application started with security protection active');
   }
 
   beforeStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('Security plugin: Application stopping...');
+    this.logger.debug('Security plugin: Application stopping...');
   }
 
   afterStop<Framework>(app: HttpApp<Framework>): void {
-    console.log('Security plugin: Application stopped');
+    this.logger.debug('Security plugin: Application stopped');
+  }
+
+  async gracefulShutdown<Framework>(app: HttpApp<Framework>, signals?: string[]): Promise<void> {
+    const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
+    this.logger.debug(`Security plugin: Graceful shutdown initiated${signalText}`);
+    
+    try {
+      // Clear monitoring interval
+      if (this.monitoringInterval) {
+        clearInterval(this.monitoringInterval);
+        this.monitoringInterval = undefined;
+      }
+      
+      // Final security stats
+      const finalStats = this.getSecurityStats();
+      this.logger.debug('Security plugin: Final security stats:', {
+        violations: finalStats.violationCount,
+        uptime: finalStats.uptime,
+        timestamp: finalStats.timestamp
+      });
+      
+      this.logger.debug('Security plugin: Graceful shutdown completed');
+    } catch (error) {
+      this.logger.error('Security plugin: Error during graceful shutdown:', error);
+      this.logger.debug('Security plugin: Graceful shutdown completed with errors');
+    }
   }
 
   // Get the security middleware for custom usage
@@ -263,7 +291,7 @@ export class SecurityPlugin implements HttpPlugin {
     endpoints.forEach(({ method, path }) => {
       const removed = routeRegistry.removeRoute(method as RequestMethod, path);
       if (removed) {
-        console.log(`Security endpoint removed: ${method} ${path}`);
+        this.logger.info(`Security endpoint removed: ${method} ${path}`);
       }
     });
   }
@@ -285,7 +313,7 @@ export class SecurityPlugin implements HttpPlugin {
         }
         
         // Log security violations
-        console.warn(`Security violation detected: ${this.violationCount} total violations`);
+        this.logger.warn(`Security violation detected: ${this.violationCount} total violations`);
       }
     }, 5000); // Check every 5 seconds
   }

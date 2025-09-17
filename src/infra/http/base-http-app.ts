@@ -1,4 +1,4 @@
-import { DIContainer } from "../../common";
+import { DIContainer, Logger, ConsoleLogger } from "../../common";
 import { Middleware, MiddlewareRegistry } from "../common";
 import { HttpApp,HttpPlugin, PluginManager } from "./types";
 import { Route } from "./route";
@@ -19,15 +19,21 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   protected middlewareRegistry: MiddlewareRegistry;
   protected container: DIContainer;
   protected pluginManager: PluginManager;
+  protected logger: Logger;
   protected state: 'stopped' | 'starting' | 'started' | 'stopping' = 'stopped';
 
   constructor(
     protected routes: Router,
+    logger?: Logger
   ) {
     this.container = new DIContainer();
     this.routeRegistry = new RouteRegistry();
     this.middlewareRegistry = new MiddlewareRegistry();
     this.pluginManager = new HttpPluginManager();
+    this.logger = logger || new ConsoleLogger();
+    
+    // Setup graceful shutdown handlers
+    this.setupGracefulShutdown();
   }
 
   // Abstract methods that must be implemented by concrete classes
@@ -128,6 +134,83 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
       if (plugin.afterStop) {
         await plugin.afterStop(this);
       }
+    }
+  }
+
+  /**
+   * Sets up graceful shutdown handlers for SIGTERM and SIGINT signals
+   */
+  private setupGracefulShutdown(): void {
+    const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
+    
+    signals.forEach(signal => {
+      process.on(signal, async () => {
+        this.logger.info(`Received ${signal}, starting graceful shutdown...`);
+        try {
+          await this.gracefulShutdown([signal]);
+          process.exit(0);
+        } catch (error) {
+          this.logger.error('Graceful shutdown failed:', error);
+          process.exit(1);
+        }
+      });
+    });
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', async (error) => {
+      this.logger.error('Uncaught Exception:', error);
+      try {
+        await this.gracefulShutdown(['uncaughtException']);
+      } catch (shutdownError) {
+        this.logger.error('Graceful shutdown failed during uncaught exception:', shutdownError);
+      }
+      process.exit(1);
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', async (reason, promise) => {
+      this.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      try {
+        await this.gracefulShutdown(['unhandledRejection']);
+      } catch (shutdownError) {
+        this.logger.error('Graceful shutdown failed during unhandled rejection:', shutdownError);
+      }
+      process.exit(1);
+    });
+  }
+
+  /**
+   * Performs graceful shutdown by calling gracefulShutdown on all plugins
+   * @param signals - The signals that triggered the shutdown (SIGTERM, SIGINT, etc.)
+   */
+  async gracefulShutdown(signals?: string[]): Promise<void> {
+    const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
+    this.logger.info(`Starting graceful shutdown${signalText}...`);
+    
+    try {
+      // Call gracefulShutdown on all plugins
+      const installedPlugins = this.pluginManager.listPlugins();
+      const shutdownPromises = installedPlugins
+        .filter(plugin => plugin.gracefulShutdown)
+        .map(async (plugin) => {
+          try {
+            this.logger.debug(`Calling gracefulShutdown on plugin: ${plugin.name}`);
+            await plugin.gracefulShutdown!(this, signals);
+          } catch (error) {
+            this.logger.error(`Error during graceful shutdown of plugin ${plugin.name}:`, error);
+          }
+        });
+
+      // Wait for all plugin shutdowns to complete
+      await Promise.all(shutdownPromises);
+      
+      // Call the regular stop method
+      await this.stop();
+      
+      this.logger.info('Graceful shutdown completed successfully');
+    } catch (error) {
+      this.logger.error('Error during graceful shutdown:', error);
+      this.logger.info('Graceful shutdown completed with errors');
     }
   }
 }
