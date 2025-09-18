@@ -6,4 +6,11 @@ export * from './read-model';
 export * from './event-store';
 export * from './projection';
 export * from './saga';
-export * from './concurrency'; 
+export * from './concurrency';
+
+// Advanced Event Patterns
+export * from './event-replay';
+export * from './event-versioning';
+export * from './saga-orchestration';
+export * from './event-correlation';
+export * from './event-sourcing-snapshots'; 
