@@ -375,21 +375,22 @@ export class BaseSnapshotManager implements SnapshotManager {
     configuration?: SnapshotConfiguration
   ): Promise<Result<Snapshot>> {
     try {
-      const config = configuration || await this.getSnapshotConfiguration(aggregateType);
-      if (config.isFailure) {
-        return Result.withFailure(config.error);
+      const configResult = configuration ? Result.withSuccess(configuration) : await this.getSnapshotConfiguration(aggregateType);
+      if (configResult.isFailure()) {
+        return Result.withFailure(configResult.failure!.error);
       }
+      const config = (configResult as Result<SnapshotConfiguration>).content;
       
       const snapshotId = this.generateSnapshotId();
       
       // Serialize aggregate state
       let serializedData: string;
       if (this.serializer) {
-        const serializationResult = await this.serializer.serialize(aggregateState);
-        if (serializationResult.isFailure) {
-          return Result.withFailure(serializationResult.error);
+        const serializationResult = await this.serializer!.serialize(aggregateState);
+        if (serializationResult.isFailure()) {
+          return Result.withFailure(serializationResult.failure!.error);
         }
-        serializedData = serializationResult.data;
+        serializedData = (serializationResult as Result<string>).content;
       } else {
         serializedData = JSON.stringify(aggregateState);
       }
@@ -397,23 +398,23 @@ export class BaseSnapshotManager implements SnapshotManager {
       // Compress if configured
       let compressedData = serializedData;
       let compressionRatio: number | undefined;
-      if (config.data.compress && this.compressor) {
-        const compressionResult = await this.compressor.compress(serializedData, config.data.compressionAlgorithm);
-        if (compressionResult.isFailure) {
-          return Result.withFailure(compressionResult.error);
+      if (config.compress && this.compressor) {
+        const compressionResult = await this.compressor!.compress(serializedData, config.compressionAlgorithm);
+        if (compressionResult.isFailure()) {
+          return Result.withFailure(compressionResult.failure!.error);
         }
-        compressedData = compressionResult.data.compressedData;
-        compressionRatio = compressionResult.data.compressionRatio;
+        compressedData = (compressionResult as Result<{ compressedData: string; compressionRatio: number; }>).content.compressedData;
+        compressionRatio = (compressionResult as Result<{ compressedData: string; compressionRatio: number; }>).content.compressionRatio;
       }
       
       // Encrypt if configured
       let finalData = compressedData;
-      if (config.data.encrypt && this.encryptor) {
-        const encryptionResult = await this.encryptor.encrypt(compressedData, config.data.encryptionAlgorithm);
-        if (encryptionResult.isFailure) {
-          return Result.withFailure(encryptionResult.error);
+      if (config.encrypt && this.encryptor) {
+        const encryptionResult = await this.encryptor!.encrypt(compressedData, config.encryptionAlgorithm);
+        if (encryptionResult.isFailure()) {
+          return Result.withFailure(encryptionResult.failure!.error);
         }
-        finalData = encryptionResult.data;
+        finalData = (encryptionResult as Result<string>).content;
       }
       
       // Calculate checksum
@@ -421,10 +422,10 @@ export class BaseSnapshotManager implements SnapshotManager {
       
       // Get previous snapshot info
       const lastSnapshot = await this.snapshotStore.getLatestSnapshot(aggregateId);
-      const eventsSinceLastSnapshot = lastSnapshot.isSuccess ? 
-        version - lastSnapshot.data.version : version;
-      const timeSinceLastSnapshot = lastSnapshot.isSuccess ?
-        Date.now() - lastSnapshot.data.createdAt.getTime() : 0;
+      const eventsSinceLastSnapshot = lastSnapshot.isSuccess() ? 
+        version - lastSnapshot.content.version : version;
+      const timeSinceLastSnapshot = lastSnapshot.isSuccess() ?
+        Date.now() - lastSnapshot.content.createdAt.getTime() : 0;
       
       // Create snapshot
       const snapshot: Snapshot = {
@@ -434,7 +435,7 @@ export class BaseSnapshotManager implements SnapshotManager {
         version,
         data: { serializedData: finalData },
         metadata: {
-          strategy: config.data.strategy,
+          strategy: config.strategy,
           eventsSinceLastSnapshot,
           timeSinceLastSnapshot,
           sizeInBytes: Buffer.byteLength(finalData, 'utf8'),
@@ -442,8 +443,8 @@ export class BaseSnapshotManager implements SnapshotManager {
           checksum,
           customData: {
             originalSize: Buffer.byteLength(serializedData, 'utf8'),
-            compressed: config.data.compress,
-            encrypted: config.data.encrypt
+            compressed: config.compress,
+            encrypted: config.encrypt
           }
         },
         createdAt: new Date(),
@@ -452,8 +453,8 @@ export class BaseSnapshotManager implements SnapshotManager {
       
       // Save snapshot
       const saveResult = await this.snapshotStore.saveSnapshot(snapshot);
-      if (saveResult.isFailure) {
-        return Result.withFailure(saveResult.error);
+      if (saveResult.isFailure()) {
+        return Result.withFailure(saveResult.failure!.error);
       }
       
       // Update tracking
@@ -461,8 +462,8 @@ export class BaseSnapshotManager implements SnapshotManager {
       this.lastSnapshotTimes.set(aggregateId, new Date());
       
       // Clean up old snapshots if configured
-      if (config.data.autoCleanup) {
-        await this.cleanupSnapshots(aggregateId, config.data);
+      if (config.autoCleanup) {
+        await this.cleanupSnapshots(aggregateId, config);
       }
       
       return Result.withSuccess(snapshot);
@@ -485,23 +486,23 @@ export class BaseSnapshotManager implements SnapshotManager {
       let snapshot: Snapshot | undefined;
       let startVersion = 0;
       
-      if (snapshotResult.isSuccess) {
-        snapshot = snapshotResult.data;
+      if (snapshotResult.isSuccess()) {
+        snapshot = snapshotResult.content;
         startVersion = snapshot.version + 1;
       }
       
       // Get events from snapshot version onwards
       const eventsResult = await this.eventStore.getEventsFromVersion(aggregateId, startVersion);
-      if (eventsResult.isFailure) {
-        return Result.withFailure(eventsResult.error);
+      if (eventsResult.isFailure()) {
+        return Result.withFailure(eventsResult.failure!.error);
       }
       
-      let events = eventsResult.data;
+      let events = (eventsResult as Result<DomainEvent[]>).content;
       
       // Filter events to target version if specified
       if (targetVersion !== undefined) {
         events = events.filter(event => {
-          const eventVersion = (event as any).version || 0;
+          const eventVersion = event.version || 0;
           return eventVersion <= targetVersion;
         });
       }
@@ -512,10 +513,10 @@ export class BaseSnapshotManager implements SnapshotManager {
       if (snapshot) {
         // Deserialize snapshot data
         const deserializationResult = await this.deserializeSnapshot(snapshot);
-        if (deserializationResult.isFailure) {
-          return Result.withFailure(deserializationResult.error);
+        if (deserializationResult.isFailure()) {
+          return Result.withFailure(deserializationResult.failure!.error);
         }
-        restoredState = deserializationResult.data;
+        restoredState = (deserializationResult as Result<Record<string, unknown>>).content;
       }
       
       // Apply events to restore state
@@ -539,11 +540,11 @@ export class BaseSnapshotManager implements SnapshotManager {
   ): Promise<Result<Snapshot>> {
     try {
       const snapshotsResult = await this.snapshotStore.getSnapshots(aggregateId);
-      if (snapshotsResult.isFailure) {
-        return Result.withFailure(snapshotsResult.error);
+      if (snapshotsResult.isFailure()) {
+        return Result.withFailure(snapshotsResult.failure!.error);
       }
       
-      const snapshots = snapshotsResult.data;
+      const snapshots = (snapshotsResult as Result<Snapshot[]>).content;
       
       // Find the snapshot with the highest version that's <= targetVersion
       const bestSnapshot = snapshots
@@ -605,8 +606,8 @@ export class BaseSnapshotManager implements SnapshotManager {
       const maxSnapshots = configuration.maxSnapshots || 10;
       
       const cleanupResult = await this.snapshotStore.deleteOldSnapshots(aggregateId, maxSnapshots);
-      if (cleanupResult.isFailure) {
-        return Result.withFailure(cleanupResult.error);
+      if (cleanupResult.isFailure()) {
+        return Result.withFailure(cleanupResult.failure!.error);
       }
       
       return Result.withSuccess();
@@ -642,29 +643,29 @@ export class BaseSnapshotManager implements SnapshotManager {
       
       // Decrypt if encrypted
       if (this.encryptor && snapshot.metadata.customData?.encrypted) {
-        const decryptionResult = await this.encryptor.decrypt(data);
-        if (decryptionResult.isFailure) {
-          return Result.withFailure(decryptionResult.error);
+        const decryptionResult = await this.encryptor!.decrypt(data);
+        if (decryptionResult.isFailure()) {
+          return Result.withFailure(decryptionResult.failure!.error);
         }
-        data = decryptionResult.data;
+        data = (decryptionResult as Result<string>).content;
       }
       
       // Decompress if compressed
       if (this.compressor && snapshot.metadata.customData?.compressed) {
-        const decompressionResult = await this.compressor.decompress(data);
-        if (decompressionResult.isFailure) {
-          return Result.withFailure(decompressionResult.error);
+        const decompressionResult = await this.compressor!.decompress(data);
+        if (decompressionResult.isFailure()) {
+          return Result.withFailure(decompressionResult.failure!.error);
         }
-        data = decompressionResult.data;
+        data = (decompressionResult as Result<string>).content;
       }
       
       // Deserialize
       if (this.serializer) {
-        const deserializationResult = await this.serializer.deserialize(data);
-        if (deserializationResult.isFailure) {
-          return Result.withFailure(deserializationResult.error);
+        const deserializationResult = await this.serializer!.deserialize(data);
+        if (deserializationResult.isFailure()) {
+          return Result.withFailure(deserializationResult.failure!.error);
         }
-        return Result.withSuccess(deserializationResult.data);
+        return Result.withSuccess((deserializationResult as Result<Record<string, unknown>>).content);
       } else {
         return Result.withSuccess(JSON.parse(data));
       }
@@ -749,7 +750,18 @@ export interface SnapshotEncryptor {
  * Snapshot Configuration Builder - fluent API for creating snapshot configurations
  */
 export class SnapshotConfigurationBuilder {
-  private configuration: Partial<SnapshotConfiguration> = {};
+  private configuration: {
+    strategy?: SnapshotStrategy;
+    eventCountThreshold?: number;
+    timeThreshold?: number;
+    interval?: number;
+    compress?: boolean;
+    compressionAlgorithm?: CompressionAlgorithm;
+    encrypt?: boolean;
+    encryptionAlgorithm?: EncryptionAlgorithm;
+    maxSnapshots?: number;
+    autoCleanup?: boolean;
+  } = {};
   
   constructor(private aggregateType: string) {}
   

@@ -30,22 +30,22 @@ export interface SagaEvent extends DomainEvent {
   /**
    * Saga ID this event belongs to
    */
-  readonly sagaId: string;
+  sagaId: string;
   
   /**
    * Step ID this event relates to
    */
-  readonly stepId?: string;
+  stepId?: string;
   
   /**
    * Event type in saga context
    */
-  readonly sagaEventType: SagaEventType;
+  sagaEventType: SagaEventType;
   
   /**
    * Correlation ID for tracking
    */
-  readonly correlationId: string;
+  correlationId: string;
 }
 
 /**
@@ -70,37 +70,37 @@ export interface SagaOrchestrationStep extends SagaStep {
   /**
    * Event that triggers this step
    */
-  readonly triggerEvent?: string;
+  triggerEvent?: string;
   
   /**
    * Events this step publishes
    */
-  readonly publishedEvents?: string[];
+  publishedEvents?: string[];
   
   /**
    * Timeout for this step
    */
-  readonly timeout?: number;
+  timeout?: number;
   
   /**
    * Retry configuration
    */
-  readonly retryConfig?: StepRetryConfig;
+  retryConfig?: StepRetryConfig;
   
   /**
    * Compensation timeout
    */
-  readonly compensationTimeout?: number;
+  compensationTimeout?: number;
   
   /**
    * Whether this step can be executed in parallel with others
    */
-  readonly parallel?: boolean;
+  parallel?: boolean;
   
   /**
    * Dependencies on other steps
    */
-  readonly dependencies?: string[];
+  dependencies?: string[];
 }
 
 /**
@@ -110,27 +110,27 @@ export interface StepRetryConfig {
   /**
    * Maximum number of retries
    */
-  readonly maxRetries: number;
+  maxRetries: number;
   
   /**
    * Retry delay in milliseconds
    */
-  readonly retryDelay: number;
+  retryDelay: number;
   
   /**
    * Backoff multiplier
    */
-  readonly backoffMultiplier?: number;
+  backoffMultiplier?: number;
   
   /**
    * Maximum retry delay
    */
-  readonly maxRetryDelay?: number;
+  maxRetryDelay?: number;
   
   /**
    * Retryable error types
    */
-  readonly retryableErrors?: string[];
+  retryableErrors?: string[];
 }
 
 /**
@@ -140,52 +140,52 @@ export interface SagaOrchestrationContext {
   /**
    * Saga ID
    */
-  readonly sagaId: string;
+  sagaId: string;
   
   /**
    * Current step index
    */
-  readonly currentStepIndex: number;
+  currentStepIndex: number;
   
   /**
    * Saga status
    */
-  readonly status: SagaStatus;
+  status: SagaStatus;
   
   /**
    * Started timestamp
    */
-  readonly startedAt: Date;
+  startedAt: Date;
   
   /**
    * Completed timestamp
    */
-  readonly completedAt?: Date;
+  completedAt?: Date;
   
   /**
    * Step execution history
    */
-  readonly stepHistory: StepExecutionHistory[];
+  stepHistory: StepExecutionHistory[];
   
   /**
    * Saga data (accumulated state)
    */
-  readonly sagaData: Record<string, unknown>;
+  sagaData: Record<string, unknown>;
   
   /**
    * Correlation ID
    */
-  readonly correlationId: string;
+  correlationId: string;
   
   /**
    * Parent saga ID (for nested sagas)
    */
-  readonly parentSagaId?: string;
+  parentSagaId?: string;
   
   /**
    * Child saga IDs
    */
-  readonly childSagaIds: string[];
+  childSagaIds: string[];
 }
 
 /**
@@ -195,37 +195,37 @@ export interface StepExecutionHistory {
   /**
    * Step ID
    */
-  readonly stepId: string;
+  stepId: string;
   
   /**
    * Start time
    */
-  readonly startedAt: Date;
+  startedAt: Date;
   
   /**
    * End time
    */
-  readonly endedAt?: Date;
+  endedAt?: Date;
   
   /**
    * Status
    */
-  readonly status: 'started' | 'completed' | 'failed' | 'compensated' | 'timeout';
+  status: 'started' | 'completed' | 'failed' | 'compensated' | 'timeout';
   
   /**
    * Retry count
    */
-  readonly retryCount: number;
+  retryCount: number;
   
   /**
    * Error message
    */
-  readonly error?: string;
+  error?: string;
   
   /**
    * Step data
    */
-  readonly stepData?: Record<string, unknown>;
+  stepData?: Record<string, unknown>;
 }
 
 /**
@@ -273,37 +273,37 @@ export interface SagaDefinition {
   /**
    * Saga name
    */
-  readonly name: string;
+  name: string;
   
   /**
    * Saga version
    */
-  readonly version: string;
+  version: string;
   
   /**
    * Orchestration strategy
    */
-  readonly strategy: SagaOrchestrationStrategy;
+  strategy: SagaOrchestrationStrategy;
   
   /**
    * Steps in the saga
    */
-  readonly steps: SagaOrchestrationStep[];
+  steps: SagaOrchestrationStep[];
   
   /**
    * Global timeout for the saga
    */
-  readonly globalTimeout?: number;
+  globalTimeout?: number;
   
   /**
    * Global retry configuration
    */
-  readonly globalRetryConfig?: StepRetryConfig;
+  globalRetryConfig?: StepRetryConfig;
   
   /**
    * Compensation strategy
    */
-  readonly compensationStrategy?: CompensationStrategy;
+  compensationStrategy?: CompensationStrategy;
 }
 
 /**
@@ -338,37 +338,37 @@ export interface SagaStatistics {
   /**
    * Total sagas started
    */
-  readonly totalSagas: number;
+  totalSagas: number;
   
   /**
    * Active sagas
    */
-  readonly activeSagas: number;
+  activeSagas: number;
   
   /**
    * Completed sagas
    */
-  readonly completedSagas: number;
+  completedSagas: number;
   
   /**
    * Failed sagas
    */
-  readonly failedSagas: number;
+  failedSagas: number;
   
   /**
    * Compensated sagas
    */
-  readonly compensatedSagas: number;
+  compensatedSagas: number;
   
   /**
    * Average execution time
    */
-  readonly averageExecutionTime: number;
+  averageExecutionTime: number;
   
   /**
    * Success rate
    */
-  readonly successRate: number;
+  successRate: number;
 }
 
 /**
@@ -425,6 +425,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
           type: 'SagaStarted',
           timestamp: new Date(),
           data: { sagaDefinition: sagaDefinition.name },
+          aggregateId: sagaId,
+          version: 1,
           sagaId,
           sagaEventType: SagaEventType.SAGA_STARTED,
           correlationId
@@ -509,6 +511,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
           type: 'SagaCancelled',
           timestamp: new Date(),
           data: { sagaId },
+          aggregateId: sagaId,
+          version: 1,
           sagaId,
           sagaEventType: SagaEventType.SAGA_FAILED,
           correlationId: context.correlationId
@@ -561,6 +565,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
         type: 'SagaStepStarted',
         timestamp: new Date(),
         data: { stepId: step.stepId },
+        aggregateId: sagaId,
+        version: 1,
         sagaId,
         stepId: step.stepId,
         sagaEventType: SagaEventType.SAGA_STEP_STARTED,
@@ -586,6 +592,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
           type: 'SagaStepCompleted',
           timestamp: new Date(),
           data: { stepId: step.stepId },
+          aggregateId: sagaId,
+          version: 1,
           sagaId,
           stepId: step.stepId,
           sagaEventType: SagaEventType.SAGA_STEP_COMPLETED,
@@ -674,6 +682,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
         type: 'SagaCompleted',
         timestamp: new Date(),
         data: { sagaId },
+        aggregateId: sagaId,
+        version: 1,
         sagaId,
         sagaEventType: SagaEventType.SAGA_COMPLETED,
         correlationId: context.correlationId
@@ -706,6 +716,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
         type: 'SagaStepFailed',
         timestamp: new Date(),
         data: { stepId: step.stepId, error: error.message },
+        aggregateId: sagaId,
+        version: 1,
         sagaId,
         stepId: step.stepId,
         sagaEventType: SagaEventType.SAGA_STEP_FAILED,
@@ -801,6 +813,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
         type: 'SagaStepCompensated',
         timestamp: new Date(),
         data: { stepId: step.stepId },
+        aggregateId: context.sagaId,
+        version: 1,
         sagaId: context.sagaId,
         stepId: step.stepId,
         sagaEventType: SagaEventType.SAGA_STEP_COMPENSATED,

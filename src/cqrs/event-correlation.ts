@@ -263,12 +263,12 @@ export interface EventCorrelationContext {
   /**
    * Last updated timestamp
    */
-  readonly lastUpdated: Date;
+  lastUpdated: Date;
   
   /**
    * Correlation strength
    */
-  readonly strength: number;
+  strength: number;
   
   /**
    * Correlation type
@@ -365,7 +365,16 @@ export class BaseEventCorrelationManager implements EventCorrelationManager {
   private correlations = new Map<string, EventCorrelation>();
   private correlationContexts = new Map<string, EventCorrelationContext>();
   private eventCorrelations = new Map<string, Set<string>>(); // eventId -> correlationIds
-  private statistics: CorrelationStatistics = {
+  private statistics: {
+    totalCorrelations: number;
+    activeCorrelations: number;
+    correlationsByType: Record<CorrelationType, number>;
+    averageStrength: number;
+    mostCorrelatedTypes: Array<{
+      eventType: string;
+      correlationCount: number;
+    }>;
+  } = {
     totalCorrelations: 0,
     activeCorrelations: 0,
     correlationsByType: {
@@ -478,13 +487,13 @@ export class BaseEventCorrelationManager implements EventCorrelationManager {
   ): Promise<Result<DomainEvent[]>> {
     try {
       const correlations = await this.getEventCorrelations(event.id || '');
-      if (correlations.isFailure) {
-        return correlations;
+      if (correlations.isFailure()) {
+        return Result.withFailure(correlations.failure!.error);
       }
       
       const correlatedEvents: DomainEvent[] = [];
       
-      for (const correlation of correlations.data) {
+      for (const correlation of (correlations as Result<EventCorrelation[]>).content) {
         if (correlationType && correlation.correlationType !== correlationType) {
           continue;
         }
@@ -691,7 +700,14 @@ export class BaseEventCorrelationManager implements EventCorrelationManager {
     targetEvent: DomainEvent
   ): CorrelationMetadata {
     // Extract common metadata from events
-    const metadata: CorrelationMetadata = {};
+    const metadata: {
+      businessProcessId?: string;
+      userId?: string;
+      sessionId?: string;
+      requestId?: string;
+      transactionId?: string;
+      customData?: Record<string, unknown>;
+    } = {};
     
     // Extract from source event
     if (sourceEvent.data) {
@@ -775,7 +791,17 @@ export class BaseEventCorrelationManager implements EventCorrelationManager {
  * Event Correlation Rule Builder - fluent API for creating correlation rules
  */
 export class EventCorrelationRuleBuilder {
-  private rule: Partial<EventCorrelationRule> = {
+  private rule: {
+    ruleId?: string;
+    name?: string;
+    description?: string;
+    sourceEventPattern?: EventPattern;
+    targetEventPattern?: EventPattern;
+    correlationType?: CorrelationType;
+    conditions: CorrelationCondition[];
+    active: boolean;
+    priority: number;
+  } = {
     conditions: [],
     active: true,
     priority: 0

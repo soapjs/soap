@@ -187,12 +187,12 @@ export interface ReplayHistory {
   readonly replayId: string;
   readonly options: ReplayOptions;
   readonly startTime: Date;
-  readonly endTime?: Date;
-  readonly status: 'running' | 'completed' | 'failed' | 'cancelled';
-  readonly totalEvents: number;
-  readonly processedEvents: number;
-  readonly failedEvents: number;
-  readonly error?: string;
+  endTime?: Date;
+  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  totalEvents: number;
+  processedEvents: number;
+  failedEvents: number;
+  error?: string;
 }
 
 /**
@@ -301,18 +301,18 @@ export class BaseEventReplayManager implements EventReplayManager {
       // Call handler's onReplayStart
       if (handler.onReplayStart) {
         const result = await handler.onReplayStart(options);
-        if (result.isFailure) {
-          throw result.error;
+        if (result.isFailure()) {
+          throw result.failure!.error;
         }
       }
       
       // Get events based on options
       const eventsResult = await this.getEventsForReplay(options);
-      if (eventsResult.isFailure) {
-        throw eventsResult.error;
+      if (eventsResult.isFailure()) {
+        throw eventsResult.failure!.error;
       }
       
-      const events = eventsResult.data;
+      const events = (eventsResult as Result<DomainEvent[]>).content;
       progress.totalEvents = events.length;
       
       // Process events in batches
@@ -327,10 +327,10 @@ export class BaseEventReplayManager implements EventReplayManager {
         try {
           // Process batch
           const result = await handler.handleBatch(batch);
-          if (result.isFailure) {
+          if (result.isFailure()) {
             progress.failedEvents += batch.length;
             if (handler.onReplayError) {
-              await handler.onReplayError(result.error);
+              await handler.onReplayError(result.failure!.error);
             }
           } else {
             progress.processedEvents += batch.length;
@@ -389,8 +389,8 @@ export class BaseEventReplayManager implements EventReplayManager {
               options.fromDate,
               options.toDate
             );
-            if (result.isFailure) return result;
-            events = result.data;
+            if (result.isFailure()) return result;
+            events = (result as Result<DomainEvent[]>).content;
           } else {
             // Get all events (this might need pagination in real implementation)
             events = [];
@@ -401,8 +401,8 @@ export class BaseEventReplayManager implements EventReplayManager {
           if (options.aggregateIds) {
             for (const aggregateId of options.aggregateIds) {
               const result = await this.eventStore.getEvents(aggregateId);
-              if (result.isFailure) return result;
-              events.push(...result.data);
+              if (result.isFailure()) return result;
+              events.push(...(result as Result<DomainEvent[]>).content);
             }
           }
           break;
@@ -411,8 +411,8 @@ export class BaseEventReplayManager implements EventReplayManager {
           if (options.eventTypes) {
             for (const eventType of options.eventTypes) {
               const result = await this.eventStore.getEventsByType(eventType);
-              if (result.isFailure) return result;
-              events.push(...result.data);
+              if (result.isFailure()) return result;
+              events.push(...(result as Result<DomainEvent[]>).content);
             }
           }
           break;
@@ -420,8 +420,8 @@ export class BaseEventReplayManager implements EventReplayManager {
         case ReplayStrategy.BY_CORRELATION:
           if (options.correlationId) {
             const result = await this.eventStore.getEventsByCorrelationId(options.correlationId);
-            if (result.isFailure) return result;
-            events = result.data;
+            if (result.isFailure()) return result;
+            events = (result as Result<DomainEvent[]>).content;
           }
           break;
       }

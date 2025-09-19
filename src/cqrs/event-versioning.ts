@@ -277,9 +277,9 @@ export class BaseEventVersionManager implements EventVersionManager {
   
   async getLatestVersion(eventType: string): Promise<Result<number>> {
     const result = await this.registry.getLatest(eventType);
-    if (result.isFailure) return result;
+    if (result.isFailure()) return Result.withFailure(result.failure!.error);
     
-    return Result.withSuccess(result.data.version);
+    return Result.withSuccess((result as Result<EventVersionSchema>).content.version);
   }
   
   async getVersions(eventType: string): Promise<Result<EventVersionSchema[]>> {
@@ -300,10 +300,10 @@ export class BaseEventVersionManager implements EventVersionManager {
       // Get migration path
       const pathResult = await this.getMigrationPath(event.type, currentVersion, targetVersion);
       if (pathResult.isFailure) {
-        return Result.withFailure(pathResult.error);
+        return Result.withFailure(pathResult.failure!.error);
       }
       
-      const migrationPath = pathResult.data;
+      const migrationPath = pathResult.content;
       let migratedData = { ...event.data };
       const migrationHistory: EventMigration[] = [];
       
@@ -343,20 +343,20 @@ export class BaseEventVersionManager implements EventVersionManager {
   async migrateToLatest(event: DomainEvent): Promise<Result<VersionedEvent>> {
     const latestVersionResult = await this.getLatestVersion(event.type);
     if (latestVersionResult.isFailure) {
-      return Result.withFailure(latestVersionResult.error);
+      return Result.withFailure(latestVersionResult.failure!.error);
     }
     
-    return this.migrateEvent(event, latestVersionResult.data);
+    return this.migrateEvent(event, latestVersionResult.content);
   }
   
   async validateEvent(event: DomainEvent, version: number): Promise<Result<boolean>> {
     try {
       const schemaResult = await this.getVersionSchema(event.type, version);
       if (schemaResult.isFailure) {
-        return Result.withFailure(schemaResult.error);
+        return Result.withFailure(schemaResult.failure!.error);
       }
       
-      const schema = schemaResult.data;
+      const schema = schemaResult.content;
       
       // Basic validation - in real implementation, use JSON Schema validator
       // This is a simplified version
@@ -376,10 +376,10 @@ export class BaseEventVersionManager implements EventVersionManager {
     try {
       const versionsResult = await this.getVersions(eventType);
       if (versionsResult.isFailure) {
-        return Result.withFailure(versionsResult.error);
+        return Result.withFailure(versionsResult.failure!.error);
       }
       
-      const versions = versionsResult.data;
+      const versions = versionsResult.content;
       
       // Sort versions by version number
       versions.sort((a, b) => a.version - b.version);
@@ -417,10 +417,10 @@ export class BaseEventVersionManager implements EventVersionManager {
     try {
       const schemaResult = await this.getVersionSchema(eventType, version);
       if (schemaResult.isFailure) {
-        return Result.withFailure(schemaResult.error);
+        return Result.withFailure(schemaResult.failure!.error);
       }
       
-      const schema = schemaResult.data;
+      const schema = schemaResult.content;
       const deprecatedSchema: EventVersionSchema = {
         ...schema,
         deprecated: true,
@@ -463,52 +463,58 @@ export class BaseEventVersionManager implements EventVersionManager {
  * Event Version Builder - fluent API for creating event version schemas
  */
 export class EventVersionBuilder {
-  private schema: Partial<EventVersionSchema> = {};
+  private config: {
+    version?: number;
+    schema?: Record<string, unknown>;
+    migration?: EventMigrationFunction;
+    deprecated?: boolean;
+    migrationDeadline?: Date;
+  } = {};
   
   constructor(private eventType: string) {}
   
   version(version: number): EventVersionBuilder {
-    this.schema.version = version;
+    this.config.version = version;
     return this;
   }
   
   schema(schema: Record<string, unknown>): EventVersionBuilder {
-    this.schema.schema = schema;
+    this.config.schema = schema;
     return this;
   }
   
   migration(migration: EventMigrationFunction): EventVersionBuilder {
-    this.schema.migration = migration;
+    this.config.migration = migration;
     return this;
   }
   
   deprecated(deprecated: boolean = true): EventVersionBuilder {
-    this.schema.deprecated = deprecated;
+    this.config.deprecated = deprecated;
     return this;
   }
   
   migrationDeadline(deadline: Date): EventVersionBuilder {
-    this.schema.migrationDeadline = deadline;
+    this.config.migrationDeadline = deadline;
     return this;
   }
   
   build(): EventVersionSchema {
-    if (!this.schema.version) {
+    if (!this.config.version) {
       throw new Error('Version is required');
     }
     
-    if (!this.schema.schema) {
+    if (!this.config.schema) {
       throw new Error('Schema is required');
     }
     
     return {
       eventType: this.eventType,
-      version: this.schema.version,
-      schema: this.schema.schema,
-      migration: this.schema.migration,
-      deprecated: this.schema.deprecated,
-      deprecatedAt: this.schema.deprecated ? new Date() : undefined,
-      migrationDeadline: this.schema.migrationDeadline
+      version: this.config.version!,
+      schema: this.config.schema!,
+      migration: this.config.migration,
+      deprecated: this.config.deprecated,
+      deprecatedAt: this.config.deprecated ? new Date() : undefined,
+      migrationDeadline: this.config.migrationDeadline
     } as EventVersionSchema;
   }
 }
