@@ -90,7 +90,7 @@ export class CreateOrderCommandHandler implements CommandHandler<CreateOrderComm
       );
 
       // Save the aggregate
-      const saveResult = await this.orderRepository.add([order]);
+      const saveResult = await this.orderRepository.add(order);
       if (saveResult.isFailure()) {
         return saveResult;
       }
@@ -274,7 +274,7 @@ export class OrderCreatedEventHandler implements EventHandler<OrderCreatedEvent>
         createdAt: event.occurredOn
       });
 
-      await this.orderRepository.add([readModel]);
+      await this.orderRepository.add(readModel);
 
       // Send confirmation email
       await this.emailService.sendOrderConfirmation(event.customerId, event.orderId);
@@ -1274,7 +1274,7 @@ export class CreateOrderCommandHandler
       );
 
       // Save the aggregate using ReadWriteRepository
-      const saveResult = await this.orderRepository.add([order]);
+      const saveResult = await this.orderRepository.add(order);
       if (saveResult.isFailure()) {
         return saveResult;
       }
@@ -1343,7 +1343,7 @@ export class OrderProjection extends BaseProjection<OrderReadModel> {
     });
 
     // Save using ReadWriteRepository
-    const result = await this.orderRepository.add([readModel]);
+    const result = await this.orderRepository.add(readModel);
     if (result.isSuccess()) {
       return Result.withSuccess(result.content[0]);
     }

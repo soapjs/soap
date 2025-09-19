@@ -49,7 +49,7 @@ class CreateUserUseCase extends UseCase<User> {
       email: data.email,
       age: data.age
     };
-    return this.userRepo.add([user]);
+    return this.userRepo.add(user);
   }
 }
 

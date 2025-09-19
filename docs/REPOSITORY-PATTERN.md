@@ -102,7 +102,7 @@ const users = await userRepository.find({ status: 'active' });
 
 // Write operations
 const newUser = new User('john@example.com', 'John Doe');
-const result = await userRepository.add([newUser]);
+const result = await userRepository.add(newUser);
 
 const updateResult = await userRepository.update({
   where: { id: 'user123' },
@@ -490,7 +490,7 @@ const userRepository = new ReadWriteRepository(userContext);
 
 // 4. Use repository
 const users = await userRepository.find();
-const newUser = await userRepository.add([new User('1', 'John', 'john@example.com', new Date())]);
+const newUser = await userRepository.add(new User('1', 'John', 'john@example.com', new Date()));
 ```
 
 ### Example 2: Multi-Source Architecture
@@ -836,7 +836,7 @@ const result = await repository.find(query);
 
 ```typescript
 try {
-  const result = await repository.add([entity]);
+  const result = await repository.add(entity);
   
   if (result.isSuccess()) {
     console.log('Entity added successfully');
