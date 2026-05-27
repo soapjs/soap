@@ -399,37 +399,59 @@ export enum AuthType {
 }
 
 /**
- * Interface for defining authentication strategies.
- * This interface is used to implement custom authentication strategies that can be
- * integrated with the authentication system, typically using Passport.js.
- * 
- * @interface AuthStrategy
- * @property {string} name - Unique name identifier for the strategy
- * @property {Function} configure - Method to configure the strategy with Passport instance
- * @param {any} passport - Passport.js instance for configuration
- * @property {Function} middleware - Method that returns Express middleware for the strategy
- * @param {any} [options] - Optional configuration options for the middleware
- * @returns {any} Express middleware function
- * @property {Function} [serializeUser] - Optional method to serialize user data for sessions
- * @param {any} user - User object to serialize
- * @param {any} done - Callback function to call when serialization is complete
- * @property {Function} [deserializeUser] - Optional method to deserialize user data from sessions
- * @param {any} id - User identifier to deserialize
- * @param {any} done - Callback function to call when deserialization is complete
+ * Result of a successful authentication attempt produced by an {@link AuthStrategy}.
+ * Strategies return the authenticated user plus any tokens or session info they
+ * issued; framework adapters map `user` onto the request (e.g. `req.user`).
+ *
+ * @interface AuthResult
+ * @template TUser - The authenticated user type (defaults to {@link AuthUser}).
+ * @property {TUser} user - The authenticated user.
+ * @property {Object} [tokens] - Tokens issued during authentication (access/refresh/etc).
+ * @property {Object} [session] - Session info when a session was created.
  */
-export interface AuthStrategy {
-  name: string;
-  configure(passport: any): void;
-  middleware(options?: any): any;
-  serializeUser?(user: any, done: any): void;
-  deserializeUser?(id: any, done: any): void;
+export interface AuthResult<TUser extends AuthUser = AuthUser> {
+  user: TUser;
+  tokens?: {
+    accessToken?: string;
+    refreshToken?: string;
+    [key: string]: string | undefined;
+  };
+  session?: {
+    sessionId: string;
+    data?: any;
+  };
+}
+
+/**
+ * Framework-agnostic authentication strategy contract.
+ *
+ * A strategy inspects the {@link HttpContext}, authenticates the caller, and
+ * resolves with an {@link AuthResult} (or `null` when the request carries no
+ * credentials and the strategy chooses to defer). Strategies never touch a
+ * specific HTTP framework directly — adapters (e.g. `@soapjs/soap-express`)
+ * wrap a strategy into framework middleware and map the result onto the request.
+ *
+ * @interface AuthStrategy
+ * @template TUser - The authenticated user type (defaults to {@link AuthUser}).
+ * @property {string} name - Unique identifier used to reference the strategy.
+ * @property {Function} [init] - Optional async setup (fetch keys, open connections).
+ * @property {Function} authenticate - Authenticates the request context.
+ * @property {Function} [logout] - Ends the authenticated session/token.
+ * @property {Function} [refresh] - Refreshes tokens for the current context.
+ */
+export interface AuthStrategy<TUser extends AuthUser = AuthUser> {
+  readonly name: string;
+  init?(): Promise<void>;
+  authenticate(ctx: HttpContext): Promise<AuthResult<TUser> | null>;
+  logout?(ctx: HttpContext): Promise<void>;
+  refresh?(ctx: HttpContext): Promise<AuthResult<TUser>>;
 }
 
 /**
  * Configuration interface for the authentication system.
  * Defines the overall authentication setup including strategies, session configuration,
  * and default authentication method.
- * 
+ *
  * @interface AuthConfig
  * @property {AuthStrategy[]} strategies - Array of authentication strategies to use
  * @property {SessionConfig} [session] - Optional session configuration for session-based auth
