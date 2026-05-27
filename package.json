@@ -1,11 +1,59 @@
 {
   "name": "@soapjs/soap",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Lightweight, clean architecture-based framework designed to streamline the development of modular and maintainable web applications",
   "homepage": "https://docs.soapjs.com",
   "repository": "https://github.com/soapjs/soap",
   "main": "build/index.js",
   "types": "build/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./build/index.js",
+      "types": "./build/index.d.ts"
+    },
+    "./common": {
+      "require": "./build/common/index.js",
+      "types": "./build/common/index.d.ts"
+    },
+    "./http": {
+      "require": "./build/infra/http/index.js",
+      "types": "./build/infra/http/index.d.ts"
+    },
+    "./middleware": {
+      "require": "./build/infra/common/index.js",
+      "types": "./build/infra/common/index.d.ts"
+    },
+    "./cqrs": {
+      "require": "./build/cqrs/index.js",
+      "types": "./build/cqrs/index.d.ts"
+    },
+    "./domain": {
+      "require": "./build/domain/index.js",
+      "types": "./build/domain/index.d.ts"
+    },
+    "./data": {
+      "require": "./build/data/index.js",
+      "types": "./build/data/index.d.ts"
+    },
+    "./config": {
+      "require": "./build/config/index.js",
+      "types": "./build/config/index.d.ts"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "common":     ["./build/common/index.d.ts"],
+      "http":       ["./build/infra/http/index.d.ts"],
+      "middleware": ["./build/infra/common/index.d.ts"],
+      "cqrs":       ["./build/cqrs/index.d.ts"],
+      "domain":     ["./build/domain/index.d.ts"],
+      "data":       ["./build/data/index.d.ts"],
+      "config":     ["./build/config/index.d.ts"]
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "funding": {
     "type": "opencollective",
     "url": "https://opencollective.com/soapjs"
