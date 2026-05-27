@@ -55,10 +55,7 @@ describe('Aggregate Root Pattern', () => {
     }
 
     protected apply(event: DomainEvent): void {
-      if (event instanceof TestEvent) {
-        // Simulate applying event
-        (this as any).version++;
-      }
+      // version is incremented by loadFromHistory after each apply
     }
   }
 

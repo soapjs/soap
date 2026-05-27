@@ -159,8 +159,13 @@ export abstract class BaseSaga implements Saga {
    * Generate a unique saga ID
    */
   private generateSagaId(): string {
-    return `saga_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `saga_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
+
+  /**
+   * Executes a single saga command. Override to wire up your CommandBus.
+   */
+  protected abstract executeCommand(command: Command): Promise<Result<void>>;
 
   /**
    * Execute the next step
@@ -172,16 +177,17 @@ export abstract class BaseSaga implements Saga {
       }
 
       const step = this.steps[this._currentStepIndex];
-      // Execute the command
-      // This would typically use a command bus
-      
+      const commandResult = await this.executeCommand(step.command);
+      if (commandResult.isFailure()) {
+        return this.fail(commandResult.failure!.error);
+      }
+
       this._currentStepIndex++;
-      
-      // Check if we've completed all steps
+
       if (this._currentStepIndex >= this.steps.length) {
         return this.complete();
       }
-      
+
       return Result.withSuccess();
     } catch (error) {
       return this.fail(error as Error);
@@ -189,18 +195,20 @@ export abstract class BaseSaga implements Saga {
   }
 
   /**
-   * Compensate the saga
+   * Compensate the saga (rollback in reverse order)
    */
   async compensate(): Promise<Result<void>> {
     try {
-      // Execute compensation commands in reverse order
       for (let i = this.currentStepIndex - 1; i >= 0; i--) {
         const step = this.steps[i];
         if (step.compensation) {
-          // Execute compensation command
+          const result = await this.executeCommand(step.compensation);
+          if (result.isFailure()) {
+            return result;
+          }
         }
       }
-      
+
       this._status = SagaStatus.COMPENSATED;
       return Result.withSuccess();
     } catch (error) {

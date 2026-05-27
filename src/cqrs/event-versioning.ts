@@ -299,11 +299,11 @@ export class BaseEventVersionManager implements EventVersionManager {
       
       // Get migration path
       const pathResult = await this.getMigrationPath(event.type, currentVersion, targetVersion);
-      if (pathResult.isFailure) {
+      if (pathResult.isFailure()) {
         return Result.withFailure(pathResult.failure!.error);
       }
       
-      const migrationPath = pathResult.content;
+      const migrationPath = (pathResult as Result<EventVersionSchema[]>).content;
       let migratedData = { ...event.data };
       const migrationHistory: EventMigration[] = [];
       
@@ -342,22 +342,22 @@ export class BaseEventVersionManager implements EventVersionManager {
   
   async migrateToLatest(event: DomainEvent): Promise<Result<VersionedEvent>> {
     const latestVersionResult = await this.getLatestVersion(event.type);
-    if (latestVersionResult.isFailure) {
+    if (latestVersionResult.isFailure()) {
       return Result.withFailure(latestVersionResult.failure!.error);
     }
     
-    return this.migrateEvent(event, latestVersionResult.content);
+    return this.migrateEvent(event, (latestVersionResult as Result<number>).content);
   }
   
   async validateEvent(event: DomainEvent, version: number): Promise<Result<boolean>> {
     try {
       const schemaResult = await this.getVersionSchema(event.type, version);
-      if (schemaResult.isFailure) {
+      if (schemaResult.isFailure()) {
         return Result.withFailure(schemaResult.failure!.error);
       }
-      
-      const schema = schemaResult.content;
-      
+
+      const schema = (schemaResult as Result<EventVersionSchema>).content;
+
       // Basic validation - in real implementation, use JSON Schema validator
       // This is a simplified version
       const isValid = this.validateAgainstSchema(event.data, schema.schema);
@@ -375,11 +375,11 @@ export class BaseEventVersionManager implements EventVersionManager {
   ): Promise<Result<EventVersionSchema[]>> {
     try {
       const versionsResult = await this.getVersions(eventType);
-      if (versionsResult.isFailure) {
+      if (versionsResult.isFailure()) {
         return Result.withFailure(versionsResult.failure!.error);
       }
       
-      const versions = versionsResult.content;
+      const versions = (versionsResult as Result<EventVersionSchema[]>).content;
       
       // Sort versions by version number
       versions.sort((a, b) => a.version - b.version);
@@ -416,11 +416,11 @@ export class BaseEventVersionManager implements EventVersionManager {
   ): Promise<Result<void>> {
     try {
       const schemaResult = await this.getVersionSchema(eventType, version);
-      if (schemaResult.isFailure) {
+      if (schemaResult.isFailure()) {
         return Result.withFailure(schemaResult.failure!.error);
       }
       
-      const schema = schemaResult.content;
+      const schema = (schemaResult as Result<EventVersionSchema>).content;
       const deprecatedSchema: EventVersionSchema = {
         ...schema,
         deprecated: true,

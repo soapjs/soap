@@ -374,7 +374,7 @@ export interface SagaStatistics {
 /**
  * Base implementation of Saga Orchestrator
  */
-export class BaseSagaOrchestrator implements SagaOrchestrator {
+export abstract class BaseSagaOrchestrator implements SagaOrchestrator {
   private activeSagas = new Map<string, SagaOrchestrationContext>();
   private sagaDefinitions = new Map<string, SagaDefinition>();
   private sagaStatistics: SagaStatistics = {
@@ -386,8 +386,16 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
     averageExecutionTime: 0,
     successRate: 0
   };
-  
-  constructor(private eventBus?: EventBus) {}
+
+  constructor(private eventBus?: SagaEventPublisher) {}
+
+  /**
+   * Executes a saga step command. Override to wire up your CommandBus.
+   */
+  protected abstract executeStep(
+    step: SagaOrchestrationStep,
+    context: SagaOrchestrationContext
+  ): Promise<void>;
   
   async startSaga(
     sagaDefinition: SagaDefinition,
@@ -576,10 +584,8 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
       await this.eventBus.publish('saga.step.started', stepStartedEvent);
     }
     
-    // Execute step (this would typically use a command bus)
     try {
-      // Simulate step execution
-      await this.simulateStepExecution(step, context);
+      await this.executeStep(step, context);
       
       // Mark step as completed
       stepHistory.status = 'completed';
@@ -825,29 +831,16 @@ export class BaseSagaOrchestrator implements SagaOrchestrator {
     }
   }
   
-  private async simulateStepExecution(
-    step: SagaOrchestrationStep,
-    context: SagaOrchestrationContext
-  ): Promise<void> {
-    // Simulate step execution delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Simulate random failure (for testing)
-    if (Math.random() < 0.1) { // 10% failure rate
-      throw new Error(`Step ${step.stepId} failed`);
-    }
-  }
-  
   private generateSagaId(): string {
-    return `saga_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `saga_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
   
   private generateCorrelationId(): string {
-    return `corr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `corr_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
   
   private generateEventId(): string {
-    return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `event_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 
@@ -913,7 +906,6 @@ export function createSagaDefinition(name: string): SagaDefinitionBuilder {
   return new SagaDefinitionBuilder(name);
 }
 
-// Placeholder for EventBus interface (would be imported from actual implementation)
-interface EventBus {
+export interface SagaEventPublisher {
   publish(topic: string, event: SagaEvent): Promise<void>;
 }

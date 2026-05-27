@@ -46,7 +46,7 @@ export abstract class BaseQuery<TResult = unknown> implements Query<TResult> {
    * Generate a unique query ID
    */
   private generateQueryId(): string {
-    return `qry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `qry_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 

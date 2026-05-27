@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'reflect-metadata';
-import { Scope, Provider, Module, DependencyContext } from './di-types';
+import { Scope, Provider, Module } from './di-types';
 import { getInjectableMetadata, getInjectMetadata, getParamTypes } from './di-decorators';
 import { BindingBuilder } from './binding-builder';
 
@@ -253,38 +253,6 @@ export class DIContainer {
     }
 
     return dependencies;
-  }
-
-  /**
-   * Create a dependency context for CLI automation
-   */
-  createContext(name: string, type: DependencyContext['type'], path: string): DependencyContext {
-    return {
-      name,
-      type,
-      path,
-      dependencies: [],
-      scope: Scope.SINGLETON
-    };
-  }
-
-  /**
-   * Register dependencies from context
-   */
-  registerFromContext(contexts: DependencyContext[]): this {
-    contexts.forEach(context => {
-      switch (context.type) {
-        case 'service':
-        case 'repository':
-        case 'usecase':
-        case 'controller':
-        case 'middleware':
-          // These would be auto-registered by CLI
-          break;
-      }
-    });
-
-    return this;
   }
 
   /**

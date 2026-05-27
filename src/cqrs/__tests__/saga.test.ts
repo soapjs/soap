@@ -23,6 +23,10 @@ class TestCommand extends BaseCommand<string> {
     constructor(name: string, steps: SagaStep[] = []) {
       super(name, steps);
     }
+
+    protected async executeCommand(): Promise<Result<void>> {
+      return Result.withSuccess();
+    }
   }
 
 describe('Saga Pattern', () => {

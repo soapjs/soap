@@ -15,6 +15,9 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   // Brand property for runtime type checking
   readonly __isHttpApp = true;
 
+  private static processHandlersRegistered = false;
+  private static activeApps: Set<BaseHttpApp> = new Set();
+
   protected routeRegistry: RouteRegistry;
   protected middlewareRegistry: MiddlewareRegistry;
   protected container: DIContainer;
@@ -31,9 +34,9 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
     this.middlewareRegistry = new MiddlewareRegistry();
     this.pluginManager = new HttpPluginManager();
     this.logger = logger || new ConsoleLogger();
-    
-    // Setup graceful shutdown handlers
-    this.setupGracefulShutdown();
+
+    BaseHttpApp.activeApps.add(this);
+    BaseHttpApp.setupProcessHandlers(this.logger);
   }
 
   // Abstract methods that must be implemented by concrete classes
@@ -138,43 +141,40 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   }
 
   /**
-   * Sets up graceful shutdown handlers for SIGTERM and SIGINT signals
+   * Registers process-level signal handlers once per process (not per instance).
+   * Delegates shutdown to all active BaseHttpApp instances.
    */
-  private setupGracefulShutdown(): void {
-    const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
-    
-    signals.forEach(signal => {
-      process.on(signal, async () => {
-        this.logger.info(`Received ${signal}, starting graceful shutdown...`);
+  private static setupProcessHandlers(logger: Logger): void {
+    if (BaseHttpApp.processHandlersRegistered) return;
+    BaseHttpApp.processHandlersRegistered = true;
+
+    const shutdown = async (signals: string[]) => {
+      for (const app of BaseHttpApp.activeApps) {
         try {
-          await this.gracefulShutdown([signal]);
-          process.exit(0);
+          await app.gracefulShutdown(signals);
         } catch (error) {
-          this.logger.error('Graceful shutdown failed:', error);
-          process.exit(1);
+          logger.error('Graceful shutdown failed:', error);
         }
+      }
+    };
+
+    ['SIGTERM', 'SIGINT', 'SIGUSR2'].forEach(signal => {
+      process.on(signal, async () => {
+        logger.info(`Received ${signal}, starting graceful shutdown...`);
+        await shutdown([signal]);
+        process.exit(0);
       });
     });
 
-    // Handle uncaught exceptions
     process.on('uncaughtException', async (error) => {
-      this.logger.error('Uncaught Exception:', error);
-      try {
-        await this.gracefulShutdown(['uncaughtException']);
-      } catch (shutdownError) {
-        this.logger.error('Graceful shutdown failed during uncaught exception:', shutdownError);
-      }
+      logger.error('Uncaught Exception:', error);
+      await shutdown(['uncaughtException']);
       process.exit(1);
     });
 
-    // Handle unhandled promise rejections
     process.on('unhandledRejection', async (reason, promise) => {
-      this.logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      try {
-        await this.gracefulShutdown(['unhandledRejection']);
-      } catch (shutdownError) {
-        this.logger.error('Graceful shutdown failed during unhandled rejection:', shutdownError);
-      }
+      logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+      await shutdown(['unhandledRejection']);
       process.exit(1);
     });
   }

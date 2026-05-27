@@ -35,13 +35,17 @@ export interface AggregateRoot<TEntity extends Entity<any>> {
 /**
  * Base implementation of Aggregate Root
  */
-export abstract class BaseAggregateRoot<TEntity extends Entity<any>> 
+export abstract class BaseAggregateRoot<TEntity extends Entity<any>>
   implements AggregateRoot<TEntity> {
-  
-  public readonly version: number = 0;
+
+  private _version: number = 0;
   public readonly uncommittedEvents: DomainEvent[] = [];
 
   constructor(public readonly entity: TEntity) {}
+
+  get version(): number {
+    return this._version;
+  }
 
   /**
    * Add a domain event to the uncommitted events list
@@ -63,6 +67,7 @@ export abstract class BaseAggregateRoot<TEntity extends Entity<any>>
   public loadFromHistory(events: DomainEvent[]): void {
     events.forEach(event => {
       this.apply(event);
+      this._version++;
     });
   }
 

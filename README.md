@@ -34,13 +34,11 @@ interface User extends Entity {
 
 // Create a use case
 @Injectable()
-class CreateUserUseCase extends UseCase<User> {
+class CreateUserUseCase implements UseCase<User> {
   constructor(
     @Inject('UserRepository')
     private userRepo: ReadWriteRepository<User>
-  ) {
-    super();
-  }
+  ) {}
 
   async execute(data: { name: string; email: string; age: number }): Promise<Result<User>> {
     const user: User = {
@@ -92,21 +90,55 @@ const activeUsers = await userRepo.find(
 - **Real-Time Applications** - WebSocket-based features and event-driven interactions
 - **Legacy Modernization** - Gradual migration to Clean Architecture
 
-## Current Status
+## What's included and what needs an adapter
 
-**Ready to Use:**
-- Core Clean Architecture implementation
-- Domain, Data, and API layers
-- CQRS, Event Sourcing, Repository patterns
-- Type-safe query builder
-- HTTP plugins (Security, Metrics, Memory Monitoring)
-- Dependency injection and validation
+SoapJS is deliberately split into two categories: things that work out of the box, and extension points that define the contract your adapter must fulfill.
 
-**In Development (v1.0.0):**
-- Framework integrations (Express, NestJS, Fastify)
-- Database adapters (MongoDB, PostgreSQL, MySQL, Redis)
-- Event bus adapters (RabbitMQ, Kafka, AWS SQS)
-- CLI tools and boilerplates
+### Ready to use
+
+| Component | Description |
+|-----------|-------------|
+| `Result`, `Failure` | Error handling without exceptions |
+| `Entity`, `ValueObject`, `UseCase` | Domain building blocks |
+| `Where`, `RepositoryQuery` | Type-safe query builder |
+| `ReadRepository`, `ReadWriteRepository` | Repository base classes (wire up your data source) |
+| `Transaction`, `TransactionRunner` | Transaction management |
+| `InMemoryCommandBus` | Command dispatch — great for development and testing |
+| `InMemoryQueryBus` | Query dispatch — great for development and testing |
+| `InMemoryEventStore` | Event store — great for development and testing |
+| `EventProcessor`, `EventDispatcher` | Event processing with retry, backoff, DLQ |
+| `BaseHttpApp`, routing, plugins | Framework-agnostic HTTP layer |
+| `SecurityPlugin`, `MetricsPlugin`, `MemoryMonitoringPlugin` | Production-ready HTTP plugins |
+| `SocketServer`, `SocketClient` | WebSocket communication |
+| `DIContainer`, `@Injectable`, `@Inject` | Dependency injection |
+
+### Extension points (implement the interface, or extend the base class)
+
+These provide the full contract and a skeletal implementation. Wire them to your infrastructure (Kafka, MongoDB, Redis, etc.) by implementing the interface or extending the base class.
+
+| Component | Interface to implement | Base class to extend |
+|-----------|----------------------|---------------------|
+| Event Bus (Kafka, RabbitMQ, SQS…) | `EventBus<M, H>` | — |
+| Event Store (MongoDB, PostgreSQL…) | `EventStore` | — |
+| Aggregate Root | — | `BaseAggregateRoot<T>` |
+| Saga | — | `BaseSaga` (implement `executeCommand`) |
+| Saga Orchestrator | `SagaOrchestrator` | `BaseSagaOrchestrator` (implement `executeStep`) |
+| Event Replay | `EventReplayManager` | `BaseEventReplayManager` |
+| Event Versioning | `EventVersionManager` | `BaseEventVersionManager` |
+| Event Correlation | `EventCorrelationManager` | `BaseEventCorrelationManager` |
+| Snapshots | `SnapshotManager` | `BaseSnapshotManager` |
+| HTTP Application | `HttpApp<F>` | `BaseHttpApp<F>` |
+| Cache | `CacheManager` | — |
+| Database Session | `DatabaseSession` | — |
+
+> **Note:** `BaseEventCorrelationManager`, `BaseSnapshotManager` and `BaseEventReplayManager` store state in memory. For production use they need a persistent `EventStore` and `SnapshotStore` — implement those interfaces against your database of choice.
+
+### Roadmap (v1.x)
+
+- Framework adapters: `@soapjs/soap-express`, `@soapjs/soap-fastify`
+- Database adapters: `@soapjs/soap-mongo`, `@soapjs/soap-postgres`
+- Event bus adapters: `@soapjs/soap-rabbit`, `@soapjs/soap-kafka`
+- CLI tools and project boilerplates
 
 ## Example Usage
 

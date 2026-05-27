@@ -43,6 +43,6 @@ export abstract class BaseDomainEvent<TData = Record<string, unknown>> implement
   }
 
   private generateId(): string {
-    return `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `evt_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

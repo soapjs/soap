@@ -46,7 +46,7 @@ export abstract class BaseCommand<TResult = void> implements Command<TResult> {
    * Generate a unique command ID
    */
   private generateCommandId(): string {
-    return `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `cmd_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }
 
