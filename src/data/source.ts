@@ -1,6 +1,7 @@
 import { DbQuery, RemoveStats, AnyObject, UpdateStats } from "../domain/types";
 import { PropertyInfo, ConstructorOf } from "../types";
 import { DbQueryFactory } from "./db-query-factory";
+import { RepositoryQuery } from "../domain/repository-query";
 
 /**
  * Defines the options for a source handling data models.
@@ -80,4 +81,22 @@ export interface Source<DocumentType = unknown> {
    * @returns {Promise<RemoveStats>} A promise that resolves to the removal statistics.
    */
   remove(query: DbQuery): Promise<RemoveStats>;
+
+  /**
+   * Sanctioned escape hatch for queries the abstract API (`Where` / params)
+   * cannot express. Executes a NATIVE, client-specific query verbatim — the
+   * payload dialect (e.g. a MongoDB aggregation pipeline, a SQL string) is
+   * produced by the given {@link RepositoryQuery}'s `build()`. The concrete
+   * Source recognizes its own dialect and runs it directly, bypassing the
+   * query factory and the entity mapper, returning the raw driver result.
+   *
+   * This keeps native queries NAMED and quarantined in a RepositoryQuery
+   * object rather than smuggled through casts.
+   *
+   * @template ResultType - The expected raw result shape (caller-defined).
+   * @param {DbQuery | RepositoryQuery} query A RepositoryQuery whose `build()`
+   *   yields the native query, or a raw native query payload.
+   * @returns {Promise<ResultType>} The raw result from the underlying driver.
+   */
+  native<ResultType = DocumentType[]>(query: DbQuery | RepositoryQuery): Promise<ResultType>;
 }

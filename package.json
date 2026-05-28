@@ -1,6 +1,6 @@
 {
   "name": "@soapjs/soap",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Lightweight, clean architecture-based framework designed to streamline the development of modular and maintainable web applications",
   "homepage": "https://docs.soapjs.com",
   "repository": "https://github.com/soapjs/soap",
@@ -42,13 +42,27 @@
   },
   "typesVersions": {
     "*": {
-      "common":     ["./build/common/index.d.ts"],
-      "http":       ["./build/infra/http/index.d.ts"],
-      "middleware": ["./build/infra/common/index.d.ts"],
-      "cqrs":       ["./build/cqrs/index.d.ts"],
-      "domain":     ["./build/domain/index.d.ts"],
-      "data":       ["./build/data/index.d.ts"],
-      "config":     ["./build/config/index.d.ts"]
+      "common": [
+        "./build/common/index.d.ts"
+      ],
+      "http": [
+        "./build/infra/http/index.d.ts"
+      ],
+      "middleware": [
+        "./build/infra/common/index.d.ts"
+      ],
+      "cqrs": [
+        "./build/cqrs/index.d.ts"
+      ],
+      "domain": [
+        "./build/domain/index.d.ts"
+      ],
+      "data": [
+        "./build/data/index.d.ts"
+      ],
+      "config": [
+        "./build/config/index.d.ts"
+      ]
     }
   },
   "publishConfig": {
