@@ -2,6 +2,12 @@
 
 import { EventBase } from "./event-base";
 import { BackoffOptions } from "./types";
+import {
+  ConsumerMetrics,
+  ConsumerOptions,
+  GracefulShutdownOptions,
+  SeekTarget,
+} from "./consumer";
 
 /**
  * Represents the base structure of an event, including its message payload and headers.
@@ -117,4 +123,66 @@ export interface EventBus<MessageType, HeadersType, EventIdType = string> {
     event: EventIdType,
     handler: (events: EventBase<MessageType, HeadersType>[]) => void
   ): Promise<string>;
+
+  /**
+   * Scenario-driven consumption with back-pressure, commit control, and a
+   * configurable start position.
+   *
+   * Unlike {@link subscribe} (a fire-and-forget push model), `consume` lets
+   * the caller pick a delivery model (`single` / `concurrent` / `batch`),
+   * bound how much is fetched and buffered, control offset commits, and start
+   * from a timestamp or explicit offset. Adapters that support a backing
+   * broker (Kafka, RabbitMQ, ...) implement this; the handler lives inside
+   * {@link ConsumerOptions}.
+   *
+   * @param {EventIdType} event - The topic/event to consume.
+   * @param {ConsumerOptions<MessageType, HeadersType>} options - Scenario, back-pressure, commit, and start-position config plus the handler.
+   * @returns {Promise<string>} A promise resolving to a subscription id.
+   */
+  consume?(
+    event: EventIdType,
+    options: ConsumerOptions<MessageType, HeadersType>
+  ): Promise<string>;
+
+  /**
+   * Seeks a running consumer to a timestamp, explicit offset, or boundary.
+   * Enables replay or skip-ahead without restarting the process.
+   *
+   * @param {SeekTarget} target - Where to seek to.
+   * @param {EventIdType} [event] - Restrict the seek to a specific topic/event.
+   * @returns {Promise<void>} A promise that resolves once the seek is applied.
+   */
+  seek?(target: SeekTarget, event?: EventIdType): Promise<void>;
+
+  /**
+   * Pauses consumption, optionally for specific topics/events.
+   *
+   * @param {EventIdType[]} [events] - Topics to pause; all if omitted.
+   */
+  pause?(events?: EventIdType[]): void;
+
+  /**
+   * Resumes consumption previously paused via {@link pause}.
+   *
+   * @param {EventIdType[]} [events] - Topics to resume; all if omitted.
+   */
+  resume?(events?: EventIdType[]): void;
+
+  /**
+   * Returns a snapshot of consumer metrics (lag, throughput, in-flight)
+   * for observability.
+   *
+   * @returns {Promise<ConsumerMetrics>} The current metrics snapshot.
+   */
+  getMetrics?(): Promise<ConsumerMetrics>;
+
+  /**
+   * Gracefully drains in-flight messages, commits resolved offsets, and then
+   * disconnects. Intended to be wired to SIGTERM/SIGINT so a rolling deploy
+   * does not tear the connection down mid-processing.
+   *
+   * @param {GracefulShutdownOptions} [options] - Drain timeout and commit behavior.
+   * @returns {Promise<void>} A promise that resolves when shutdown completes.
+   */
+  gracefulShutdown?(options?: GracefulShutdownOptions): Promise<void>;
 }
