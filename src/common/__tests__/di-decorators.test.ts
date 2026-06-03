@@ -77,11 +77,34 @@ describe('DI Decorators', () => {
   });
 
   describe('@Inject for constructor parameters', () => {
-    it('should be skipped - parameter decorators have issues in test environment', () => {
-      // Parameter decorators have issues in Jest test environment
-      // This functionality works in runtime but is difficult to test
-      // The @Inject decorator now supports both property and parameter injection
-      expect(true).toBe(true);
+    it('should store parameter tokens per-class without leaking into Object.prototype', () => {
+      // Regression test for the "constructor as metadata key" trap:
+      // a plain object literal already has an inherited `.constructor`
+      // property pointing at `Object`, so a naive
+      //   if (!existingTokens.constructor) existingTokens.constructor = []
+      // guard always falls through and `existingTokens.constructor[i] = token`
+      // ends up assigning to the global `Object` constructor. Two classes
+      // declared in the same process would then share (and clobber) tokens.
+
+      class A {
+        constructor(@Inject('TokenA0') _a0: unknown, @Inject('TokenA1') _a1: unknown) {}
+      }
+      class B {
+        constructor(@Inject('TokenB0') _b0: unknown, @Inject('TokenB1') _b1: unknown) {}
+      }
+
+      const a = getInjectMetadata(A);
+      const b = getInjectMetadata(B);
+
+      expect(a?.parameters).toEqual(['TokenA0', 'TokenA1']);
+      expect(b?.parameters).toEqual(['TokenB0', 'TokenB1']);
+
+      // The metadata buckets must NOT be the same array (no cross-class leakage)
+      expect(a?.parameters).not.toBe(b?.parameters);
+
+      // And nothing leaked onto the global Object constructor.
+      expect((Object as any)[0]).not.toBe('TokenA0');
+      expect((Object as any)[0]).not.toBe('TokenB0');
     });
   });
 

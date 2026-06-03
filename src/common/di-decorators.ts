@@ -48,20 +48,25 @@ export function Inject(token: string): PropertyDecorator & ParameterDecorator {
   return function (target: any, propertyKey: string | symbol | undefined, parameterIndex?: number) {
     // Check if this is a parameter decorator (parameterIndex is provided)
     if (typeof parameterIndex === 'number') {
-      // Parameter decorator - for constructor injection
+      // Parameter decorator - for constructor injection.
+      // NOTE: never use `constructor` as the key on a plain object literal
+      // — `{}.constructor` is inherited from `Object.prototype` and is
+      // truthy, so the lazy-init guard always misses and the array of
+      // tokens ends up clobbering the global `Object` constructor instead
+      // of being stored per-class. Use a neutral key (`parameters`).
       const existingTokens = Reflect.getMetadata(INJECT_METADATA_KEY, target) || {};
-      if (!existingTokens.constructor) {
-        existingTokens.constructor = [];
+      if (!Array.isArray(existingTokens.parameters)) {
+        existingTokens.parameters = [];
       }
-      existingTokens.constructor[parameterIndex] = token;
+      existingTokens.parameters[parameterIndex] = token;
       Reflect.defineMetadata(INJECT_METADATA_KEY, existingTokens, target);
-      
+
       // Also store on the prototype for consistency
       const prototypeTokens = Reflect.getMetadata(INJECT_METADATA_KEY, target.prototype) || {};
-      if (!prototypeTokens.constructor) {
-        prototypeTokens.constructor = [];
+      if (!Array.isArray(prototypeTokens.parameters)) {
+        prototypeTokens.parameters = [];
       }
-      prototypeTokens.constructor[parameterIndex] = token;
+      prototypeTokens.parameters[parameterIndex] = token;
       Reflect.defineMetadata(INJECT_METADATA_KEY, prototypeTokens, target.prototype);
     } else {
       // Property decorator - for property injection

@@ -152,11 +152,15 @@ export class DIContainer {
 
     for (let i = 0; i < paramTypes.length; i++) {
       const paramType = paramTypes[i];
-      
-      // Check if there's @Inject metadata for this parameter
-      if (injectMetadata && injectMetadata.constructor && injectMetadata.constructor[i] !== undefined) {
+
+      // Check if there's @Inject metadata for this parameter.
+      // Tokens live under `parameters` (not `constructor` — see Inject decorator).
+      const injectTokens: string[] | undefined =
+        Array.isArray(injectMetadata?.parameters) ? injectMetadata.parameters : undefined;
+
+      if (injectTokens && injectTokens[i] !== undefined) {
         try {
-          dependencies.push(this.get(injectMetadata.constructor[i]));
+          dependencies.push(this.get(injectTokens[i]));
         } catch {
           dependencies.push(undefined);
         }
@@ -239,8 +243,11 @@ export class DIContainer {
     const injectMetadata = getInjectMetadata(constructor);
     const dependencies: string[] = [];
 
+    const injectTokens: string[] | undefined =
+      Array.isArray(injectMetadata?.parameters) ? injectMetadata.parameters : undefined;
+
     for (let i = 0; i < paramTypes.length; i++) {
-      const token = injectMetadata?.constructor?.[i];
+      const token = injectTokens?.[i];
       if (token) {
         dependencies.push(token);
       } else {
