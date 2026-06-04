@@ -70,6 +70,7 @@ const activeUsers = await userRepo.find(
 - **[Dependency Injection](docs/DEPENDENCY-INJECTION.md)** - Service container and DI
 
 ### HTTP & Real-time
+- **[HTTP adapters](docs/HTTP-ADAPTERS.md)** - Optional Zod, OpenAPI, tracing — wire in your app, not in soap-express
 - **[HTTP Routing](docs/ROUTES.md)** - Framework-agnostic routing system
 - **[Socket Communication](docs/SOCKET.md)** - Real-time communication patterns
 - **[Socket Handlers](docs/SOCKET-HANDLERS.md)** - WebSocket handler patterns
@@ -108,6 +109,7 @@ SoapJS is deliberately split into two categories: things that work out of the bo
 | `InMemoryEventStore` | Event store — great for development and testing |
 | `EventProcessor`, `EventDispatcher` | Event processing with retry, backoff, DLQ |
 | `BaseHttpApp`, routing, plugins | Framework-agnostic HTTP layer |
+| `HttpContract`, `ApiDocFragment`, `Tracer` / `Span` | HTTP ports for validation, docs, and tracing adapters |
 | `SecurityPlugin`, `MetricsPlugin`, `MemoryMonitoringPlugin` | Production-ready HTTP plugins |
 | `SocketServer`, `SocketClient` | WebSocket communication |
 | `DIContainer`, `@Injectable`, `@Inject` | Dependency injection |
@@ -128,10 +130,24 @@ These provide the full contract and a skeletal implementation. Wire them to your
 | Event Correlation | `EventCorrelationManager` | `BaseEventCorrelationManager` |
 | Snapshots | `SnapshotManager` | `BaseSnapshotManager` |
 | HTTP Application | `HttpApp<F>` | `BaseHttpApp<F>` |
+| Request contracts (Zod, TypeBox, …) | — | Use `HttpContract` + route `apiDoc` / `middlewares.pre` from your adapter |
+| API documentation (OpenAPI, …) | `HttpPlugin` | e.g. `@soapjs/soap-openapi` `DocumentationPlugin` |
+| Distributed tracing | `Tracer`, `Span` | e.g. `@soapjs/soap-node-otel` `NoopTracer` or OpenTelemetry |
 | Cache | `CacheManager` | — |
 | Database Session | `DatabaseSession` | — |
 
 > **Note:** `BaseEventCorrelationManager`, `BaseSnapshotManager` and `BaseEventReplayManager` store state in memory. For production use they need a persistent `EventStore` and `SnapshotStore` — implement those interfaces against your database of choice.
+
+### HTTP adapter packages (separate repos)
+
+| Package | Role |
+|---------|------|
+| `@soapjs/soap-express` | Express controllers, routing, `bootstrap` — **no** Zod/OpenAPI/OTel bundled |
+| `@soapjs/soap-contract-zod` | `bodyContract()` → validation middleware + `apiDoc` |
+| `@soapjs/soap-openapi` | OpenAPI 3 + Swagger UI plugin |
+| `@soapjs/soap-node-otel` | `TracingMiddleware` + noop tracer implementing `Tracer` |
+
+Wire them in **your** `index.ts` via `bootstrap({ plugins, middleware: { pre } })`.
 
 ### Roadmap (v1.x)
 

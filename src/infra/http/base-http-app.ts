@@ -1,5 +1,6 @@
 import { DIContainer, Logger, ConsoleLogger } from "../../common";
 import { Middleware, MiddlewareRegistry } from "../common";
+import { Drainable } from "../events/graceful-shutdown";
 import { HttpApp,HttpPlugin, PluginManager } from "./types";
 import { Route } from "./route";
 import { RouteGroup } from "./route.group";
@@ -24,6 +25,16 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   protected pluginManager: PluginManager;
   protected logger: Logger;
   protected state: 'stopped' | 'starting' | 'started' | 'stopping' = 'stopped';
+  /**
+   * External resources to drain on shutdown, in registration order.
+   *
+   * `Drainable` is duck-typed (`gracefulShutdown` | `disconnect` | `close`),
+   * so any of the official adapters (Mongo source, Postgres source, Kafka
+   * event-bus, SocketServer, etc.) can be registered without ceremony. Drained
+   * AFTER plugins and AFTER `stop()` so the HTTP server stops accepting new
+   * traffic before backend connections close.
+   */
+  protected drainables: Drainable[] = [];
 
   constructor(
     protected routes: Router,
@@ -35,8 +46,45 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
     this.pluginManager = new HttpPluginManager();
     this.logger = logger || new ConsoleLogger();
 
+    // Expose the logger through DI so every layer that resolves out of the
+    // container (controllers, use cases, auth strategies, event handlers) can
+    // request it without the framework hard-coding a singleton.
+    if (!this.container.has(Logger.Token)) {
+      this.container.bindValue(Logger.Token, this.logger);
+    }
+
     BaseHttpApp.activeApps.add(this);
     BaseHttpApp.setupProcessHandlers(this.logger);
+  }
+
+  /**
+   * Returns the framework-managed Logger. Mirrors the DI binding under
+   * `Logger.Token` — useful for early-bootstrap code that doesn't yet have
+   * a resolved container reference.
+   */
+  getLogger(): Logger {
+    return this.logger;
+  }
+
+  /**
+   * Registers an external resource to be drained on graceful shutdown.
+   *
+   * `Drainable` is duck-typed: any object exposing
+   * `gracefulShutdown(options?)`, `disconnect()`, or `close()` is accepted.
+   * This means the official adapters (`Mongo.Source`, `Postgres.Source`,
+   * `KafkaEventBus`, `SocketServer`, …) work out of the box. Multiple
+   * registrations of the same instance are deduped.
+   */
+  registerDrainable(resource: Drainable): this {
+    if (!this.drainables.includes(resource)) {
+      this.drainables.push(resource);
+    }
+    return this;
+  }
+
+  /** Returns the list of registered drainables (in registration order). */
+  getDrainables(): readonly Drainable[] {
+    return this.drainables;
   }
 
   // Abstract methods that must be implemented by concrete classes
@@ -186,9 +234,11 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   async gracefulShutdown(signals?: string[]): Promise<void> {
     const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
     this.logger.info(`Starting graceful shutdown${signalText}...`);
-    
+
     try {
-      // Call gracefulShutdown on all plugins
+      // 1. Plugins first — they often close their own resources (metrics
+      //    flush, health probes flip to "draining", etc.) before the HTTP
+      //    server stops responding.
       const installedPlugins = this.pluginManager.listPlugins();
       const shutdownPromises = installedPlugins
         .filter(plugin => plugin.gracefulShutdown)
@@ -201,16 +251,46 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
           }
         });
 
-      // Wait for all plugin shutdowns to complete
       await Promise.all(shutdownPromises);
-      
-      // Call the regular stop method
+
+      // 2. Stop the HTTP server — no new requests in, in-flight ones can
+      //    finish (express respects this through `server.close()`).
       await this.stop();
-      
+
+      // 3. Drain external resources (DBs, brokers, sockets, …) in
+      //    registration order. Done LAST so request handlers that are still
+      //    finishing have valid connections.
+      for (const resource of this.drainables) {
+        await BaseHttpApp.drainResource(resource, this.logger);
+      }
+
       this.logger.info('Graceful shutdown completed successfully');
     } catch (error) {
       this.logger.error('Error during graceful shutdown:', error);
       this.logger.info('Graceful shutdown completed with errors');
     }
   }
+
+  private static async drainResource(resource: Drainable, logger: Logger): Promise<void> {
+    const name =
+      (resource as { constructor?: { name?: string } }).constructor?.name ?? 'drainable';
+    try {
+      if (typeof resource.gracefulShutdown === 'function') {
+        logger.debug(`Draining ${name} via gracefulShutdown()`);
+        await resource.gracefulShutdown();
+      } else if (typeof resource.disconnect === 'function') {
+        logger.debug(`Draining ${name} via disconnect()`);
+        await resource.disconnect();
+      } else if (typeof resource.close === 'function') {
+        logger.debug(`Draining ${name} via close()`);
+        await resource.close();
+      } else {
+        logger.warn(`Skipping ${name}: no drain method exposed`);
+      }
+    } catch (error) {
+      logger.error(`Error draining ${name}:`, error);
+    }
+  }
 }
+
+export { Drainable } from "../events/graceful-shutdown";

@@ -30,6 +30,7 @@ export interface MetricsPluginOptions extends MetricsConfig {
 
 export class MetricsPlugin implements HttpPlugin {
   readonly name = 'metrics';
+  readonly version = '0.1.0';
 
   private collector: MetricsCollector;
   public config: MetricsPluginOptions;
@@ -194,9 +195,15 @@ export class MetricsPlugin implements HttpPlugin {
       }
     );
 
-    // Register route using RouteRegistry
+    // Register in the framework-agnostic registry …
     const routeRegistry = app.getRouteRegistry();
     routeRegistry.register(metricsRoute);
+
+    // …and mount on the concrete HTTP framework when available (Express).
+    const frameworkApp = app.getApp?.() as { get?: (path: string, handler: unknown) => void } | undefined;
+    if (frameworkApp && typeof frameworkApp.get === 'function') {
+      frameworkApp.get(metricsPath, (req: any, res: any) => metricsHandler(req, res));
+    }
   }
 
   private removeMetricsEndpoint<Framework>(app: HttpApp<Framework>): void {

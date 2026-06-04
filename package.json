@@ -1,6 +1,6 @@
 {
   "name": "@soapjs/soap",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Lightweight, clean architecture-based framework designed to streamline the development of modular and maintainable web applications",
   "homepage": "https://docs.soapjs.com",
   "repository": "https://github.com/soapjs/soap",
@@ -22,6 +22,10 @@
     "./middleware": {
       "require": "./build/infra/common/index.js",
       "types": "./build/infra/common/index.d.ts"
+    },
+    "./events": {
+      "require": "./build/infra/events/index.js",
+      "types": "./build/infra/events/index.d.ts"
     },
     "./cqrs": {
       "require": "./build/cqrs/index.js",
@@ -50,6 +54,9 @@
       ],
       "middleware": [
         "./build/infra/common/index.d.ts"
+      ],
+      "events": [
+        "./build/infra/events/index.d.ts"
       ],
       "cqrs": [
         "./build/cqrs/index.d.ts"

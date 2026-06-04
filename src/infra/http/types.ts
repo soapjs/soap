@@ -5,6 +5,8 @@ import { IO, Middleware, MiddlewareFunction, MiddlewareRegistry } from "../commo
 import { Route } from "./route";
 import { RouteGroup } from "./route.group";
 import { RouteRegistry } from "./route.registry";
+import type { ApiDocFragment } from "./api-doc";
+import type { HttpContract } from "./contracts";
 
 /**
  * Enum representing different types of middleware.
@@ -205,6 +207,16 @@ export type RouteAdditionalOptions = {
    * Response compression options.
    */
   compression?: RouteCompressionOptions;
+
+  /**
+   * OpenAPI-style metadata for documentation plugins (see `@soapjs/soap-openapi`).
+   */
+  apiDoc?: ApiDocFragment;
+
+  /**
+   * Optional contract descriptor; adapters usually set `middlewares.pre` instead.
+   */
+  contract?: HttpContract | HttpContract[];
 
   [key: string]: unknown;
 };
@@ -633,21 +645,7 @@ export interface ControllerMetadata {
   middlewares: MiddlewareMetadata[];
   type?: 'http' | 'websocket';
   options?: {
-    apiDoc?: {
-      tags?: string[];
-      description?: string;
-      externalDocs?: {
-        description?: string;
-        url: string;
-      };
-      responses?: Record<string, any>;
-      parameters?: any[];
-      summary?: string;
-      deprecated?: boolean;
-      operationId?: string;
-      examples?: Record<string, any>;
-      security?: any[];
-    };
+    apiDoc?: ApiDocFragment;
   };
 }
 

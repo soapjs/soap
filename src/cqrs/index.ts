@@ -10,6 +10,7 @@ export * from './event-store.impl';
 export * from './projection';
 export * from './saga';
 export * from './concurrency';
+export * from './domain-event-bus';
 
 // Advanced Event Patterns
 export * from './event-replay';

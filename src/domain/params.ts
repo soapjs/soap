@@ -15,6 +15,11 @@ export class AggregationParams {
   static isAggregationParams(obj: any): obj is AggregationParams {
     return (
       obj &&
+      // A RepositoryQuery (e.g. ThreatsSpecification) is a class with `.build()`
+      // and `.with()`. Without this guard those instances would pass every
+      // optional-field check below and silently bypass `.build()`, leaving the
+      // data source with no WHERE clause — i.e. returning ALL documents.
+      typeof obj.build !== "function" &&
       Object.keys(obj).length > 0 &&
       (obj.groupBy === undefined || Array.isArray(obj.groupBy)) &&
       (obj.filterBy === undefined || typeof obj.filterBy === "object") &&
@@ -125,6 +130,7 @@ export class CountParams {
   static isCountParams(obj: any): obj is CountParams {
     return (
       obj &&
+      typeof obj.build !== "function" &&
       Object.keys(obj).length > 0 &&
       (obj.sort === undefined || typeof obj.sort === "object") &&
       (obj.where === undefined || typeof obj.where === "object")
@@ -164,6 +170,10 @@ export class FindParams {
   static isFindParams(obj: any): obj is FindParams {
     return (
       obj &&
+      // Exclude `RepositoryQuery` instances — they expose `.build()` and would
+      // otherwise pass the loose structural checks below, causing the caller to
+      // skip `.build()` and hand the data source a query with no WHERE clause.
+      typeof obj.build !== "function" &&
       Object.keys(obj).length > 0 &&
       (obj.limit === undefined || typeof obj.limit === "number") &&
       (obj.offset === undefined || typeof obj.offset === "number") &&
@@ -223,6 +233,7 @@ export class RemoveParams {
   static isRemoveParams(obj: any): obj is RemoveParams {
     return (
       obj &&
+      typeof obj.build !== "function" &&
       Object.keys(obj).length > 0 &&
       (obj.where === undefined || typeof obj.where === "object")
     );

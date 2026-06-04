@@ -9,6 +9,7 @@ import {
 } from "../params";
 import { Filter, Sort } from "../types";
 import { Where } from "../where";
+import { RepositoryQuery } from "../repository-query";
 
 describe("Helper Functions", () => {
   test("isAggregationParams should return true for valid AggregationParams", () => {
@@ -62,6 +63,36 @@ describe("Helper Functions", () => {
       methods: [UpdateMethod.UpdateOne],
     };
     expect(UpdateParams.isUpdateParams(validParams)).toBe(true);
+  });
+
+  // Regression: a RepositoryQuery instance (e.g. ThreatsSpecification) is a
+  // class with `.build()`/`.with()` and arbitrary instance fields. Without an
+  // explicit dyscriminator the loose structural checks below would happily
+  // accept it as a FindParams/CountParams/etc, and the repository would skip
+  // `.build()` — passing a query with no WHERE clause to the data source and
+  // silently returning ALL documents.
+  test("isFindParams should return false for a RepositoryQuery instance", () => {
+    class DummySpec extends RepositoryQuery {
+      constructor(private readonly universe: string) {
+        super();
+      }
+      build() {
+        return { where: new Where() };
+      }
+    }
+    expect(FindParams.isFindParams(new DummySpec("dc"))).toBe(false);
+  });
+
+  test("isCountParams / isAggregationParams / isRemoveParams should also reject a RepositoryQuery", () => {
+    class DummySpec extends RepositoryQuery {
+      build() {
+        return { where: new Where() };
+      }
+    }
+    const spec = new DummySpec();
+    expect(CountParams.isCountParams(spec)).toBe(false);
+    expect(AggregationParams.isAggregationParams(spec)).toBe(false);
+    expect(RemoveParams.isRemoveParams(spec)).toBe(false);
   });
 });
 
