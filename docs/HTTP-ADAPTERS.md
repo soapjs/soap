@@ -81,10 +81,10 @@ Implementations live in adapter packages (e.g. noop or OpenTelemetry).
 | Package | Purpose |
 |---------|---------|
 | `@soapjs/soap-contract-zod` | `bodyContract`, `queryContract`, `paramsContract`, `mergeContracts` |
-| `@soapjs/soap-openapi` | `DocumentationPlugin`, collectors, `/openapi.json`, Swagger UI |
+| `@soapjs/soap-openapi` | `DocumentationPlugin`, collectors, `/openapi.json`, Swagger UI (reads `DecoratorRegistry` from `@soapjs/soap/http`) |
 | `@soapjs/soap-node-otel` | `TracingMiddleware`, `NoopTracer` implementing `Tracer` |
 
-Peer dependency on `@soapjs/soap` (≥ 0.11.5 for typed `apiDoc` / `contract` on routes).
+Peer dependency on `@soapjs/soap` (≥ 0.12.1 — `DecoratorRegistry` and typed `apiDoc` / `contract` on routes).
 
 ## Wiring in the application
 
@@ -235,8 +235,8 @@ Example: a TypeBox package would export `bodyContractTypeBox()` setting `kind: '
 
 | Package | Role |
 |---------|------|
-| `@soapjs/soap` ≥ 0.11.5 | `HttpContract`, `ApiDocFragment`, `Tracer` ports |
-| `@soapjs/soap-express` ≥ 0.4.7 | Express bootstrap without adapter shortcuts |
+| `@soapjs/soap` ≥ 0.12.1 | `DecoratorRegistry`, `HttpContract`, `ApiDocFragment`, `Tracer` ports |
+| `@soapjs/soap-express` ≥ 0.5.0 | Express bootstrap without adapter shortcuts |
 | `@soapjs/soap-contract-zod` 0.1.0 | Zod contracts |
-| `@soapjs/soap-openapi` 0.1.0 | OpenAPI plugin |
+| `@soapjs/soap-openapi` 0.1.1 | OpenAPI plugin (peer: `@soapjs/soap` only) |
 | `@soapjs/soap-node-otel` 0.1.0 | Tracing middleware + noop tracer |

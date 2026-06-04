@@ -8,6 +8,7 @@ export * from "./types";
 export * from "./api-doc";
 export * from "./contracts";
 export * from "./tracing";
+export * from "./decorator-registry";
 export * from './metrics';
 export * from './monitoring';
 export * from './base-http-app';

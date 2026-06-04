@@ -109,7 +109,7 @@ SoapJS is deliberately split into two categories: things that work out of the bo
 | `InMemoryEventStore` | Event store — great for development and testing |
 | `EventProcessor`, `EventDispatcher` | Event processing with retry, backoff, DLQ |
 | `BaseHttpApp`, routing, plugins | Framework-agnostic HTTP layer |
-| `HttpContract`, `ApiDocFragment`, `Tracer` / `Span` | HTTP ports for validation, docs, and tracing adapters |
+| `DecoratorRegistry`, `HttpContract`, `ApiDocFragment`, `Tracer` / `Span` | Route/CQRS metadata registry + HTTP ports for adapters |
 | `SecurityPlugin`, `MetricsPlugin`, `MemoryMonitoringPlugin` | Production-ready HTTP plugins |
 | `SocketServer`, `SocketClient` | WebSocket communication |
 | `DIContainer`, `@Injectable`, `@Inject` | Dependency injection |
