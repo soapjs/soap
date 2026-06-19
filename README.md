@@ -22,6 +22,12 @@ SoapJS brings enterprise architecture patterns to TypeScript applications. Build
 npm install @soapjs/soap
 ```
 
+> **Tip:** Use the [`@soapjs/cli`](https://www.npmjs.com/package/@soapjs/cli) to scaffold SoapJS projects and generate clean-architecture building blocks (entities, use cases, repositories, controllers) much faster than by hand:
+>
+> ```bash
+> npm install -g @soapjs/cli
+> ```
+
 ```typescript
 import { Entity, ReadWriteRepository, UseCase, Result, Where } from '@soapjs/soap';
 
@@ -154,7 +160,7 @@ Wire them in **your** `index.ts` via `bootstrap({ plugins, middleware: { pre } }
 - Framework adapters: `@soapjs/soap-express`, `@soapjs/soap-fastify`
 - Database adapters: `@soapjs/soap-mongo`, `@soapjs/soap-postgres`
 - Event bus adapters: `@soapjs/soap-rabbit`, `@soapjs/soap-kafka`
-- CLI tools and project boilerplates
+- Project boilerplates
 
 ## Example Usage
 
