@@ -359,6 +359,26 @@ export interface AuthUser {
 }
 
 /**
+ * Authentication state attached to framework requests by HTTP adapters.
+ *
+ * The base token/type/payload fields keep the original SoapJS request shape,
+ * while result/tokens/session allow adapters such as `@soapjs/soap-express`
+ * to expose the richer result returned by an {@link AuthStrategy}.
+ *
+ * @interface AuthState
+ * @template TUser - The authenticated user type (defaults to {@link AuthUser}).
+ */
+export interface AuthState<TUser extends AuthUser = AuthUser> {
+  token?: string;
+  type?: string;
+  payload?: any;
+  result?: AuthResult<TUser>;
+  tokens?: AuthResult<TUser>["tokens"];
+  session?: AuthResult<TUser>["session"];
+  [key: string]: any;
+}
+
+/**
  * Extended request interface that includes authentication and session information.
  * This interface extends the base request object with user authentication data,
  * session information, and authorization details.
@@ -369,17 +389,16 @@ export interface AuthUser {
  * @property {string} [auth.token] - Authentication token (JWT, API key, etc.)
  * @property {string} [auth.type] - Type of authentication used (jwt, api_key, etc.)
  * @property {any} [auth.payload] - Decoded token payload or authentication data
+ * @property {AuthResult} [auth.result] - Full authentication result
+ * @property {Object} [auth.tokens] - Tokens issued by the authentication strategy
+ * @property {Object} [auth.session] - Session info issued by the authentication strategy
  * @property {any} [session] - Session data object (optional)
  * @property {string} [sessionID] - Unique session identifier (optional)
  * @property {any} [key] - Additional custom properties can be added dynamically
  */
-export interface AuthRequest {
-  user?: AuthUser;
-  auth?: {
-    token?: string;
-    type?: string;
-    payload?: any;
-  };
+export interface AuthRequest<TUser extends AuthUser = AuthUser> {
+  user?: TUser;
+  auth?: AuthState<TUser>;
   session?: any;
   sessionID?: string;
   [key: string]: any;
@@ -445,18 +464,24 @@ export interface AuthResult<TUser extends AuthUser = AuthUser> {
  *
  * @interface AuthStrategy
  * @template TUser - The authenticated user type (defaults to {@link AuthUser}).
+ * @template TContext - The HTTP context shape expected by this strategy
+ * (defaults to {@link HttpContext}). Adapters can pass richer framework
+ * contexts without casting while existing strategies keep the same API.
  * @property {string} name - Unique identifier used to reference the strategy.
  * @property {Function} [init] - Optional async setup (fetch keys, open connections).
  * @property {Function} authenticate - Authenticates the request context.
  * @property {Function} [logout] - Ends the authenticated session/token.
  * @property {Function} [refresh] - Refreshes tokens for the current context.
  */
-export interface AuthStrategy<TUser extends AuthUser = AuthUser> {
+export interface AuthStrategy<
+  TUser extends AuthUser = AuthUser,
+  TContext extends HttpContext = HttpContext
+> {
   readonly name: string;
   init?(): Promise<void>;
-  authenticate(ctx: HttpContext): Promise<AuthResult<TUser> | null>;
-  logout?(ctx: HttpContext): Promise<void>;
-  refresh?(ctx: HttpContext): Promise<AuthResult<TUser>>;
+  authenticate(ctx: TContext): Promise<AuthResult<TUser> | null>;
+  logout?(ctx: TContext): Promise<void>;
+  refresh?(ctx: TContext): Promise<AuthResult<TUser>>;
 }
 
 /**
@@ -465,12 +490,17 @@ export interface AuthStrategy<TUser extends AuthUser = AuthUser> {
  * and default authentication method.
  *
  * @interface AuthConfig
+ * @template TUser - The authenticated user type (defaults to {@link AuthUser}).
+ * @template TContext - The HTTP context shape accepted by configured strategies.
  * @property {AuthStrategy[]} strategies - Array of authentication strategies to use
  * @property {SessionConfig} [session] - Optional session configuration for session-based auth
  * @property {string} [defaultStrategy] - Optional name of the default authentication strategy
  */
-export interface AuthConfig {
-  strategies: AuthStrategy[];
+export interface AuthConfig<
+  TUser extends AuthUser = AuthUser,
+  TContext extends HttpContext = HttpContext
+> {
+  strategies: AuthStrategy<TUser, TContext>[];
   session?: SessionConfig;
   defaultStrategy?: string;
 }
