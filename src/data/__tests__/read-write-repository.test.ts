@@ -122,12 +122,159 @@ describe("ReadWriteRepository class", () => {
     expect(result).toEqual(Result.withSuccess(updateStats));
   });
 
+  test("should update entity by id when entity is provided", async () => {
+    const entity = { id: 1, name: "UpdatedEntity" };
+    const document = { id: 1, name: "UpdatedEntity", _id: "doc1" };
+    const updateStats = { modifiedCount: 1 } as UpdateStats;
+
+    (dataContext.mapper.toModel as jest.Mock).mockReturnValue(document);
+    (dataContext.source.update as jest.Mock).mockResolvedValueOnce(updateStats);
+
+    const result = await repository.update(entity);
+
+    expect(dataContext.mapper.toModel).toHaveBeenCalledWith(entity);
+    expect(dataContext.source.update).toHaveBeenCalledWith({
+      updates: [document],
+      where: [new Where().valueOf("id").isEq(1)],
+      methods: [UpdateMethod.UpdateOne],
+    });
+    expect(result).toEqual(Result.withSuccess(updateStats));
+  });
+
+  test("should update each entity by id when entities are provided", async () => {
+    const entities = [
+      { id: 1, name: "UpdatedEntity1" },
+      { id: 2, name: "UpdatedEntity2" },
+    ];
+    const documents = [
+      { id: 1, name: "UpdatedEntity1", _id: "doc1" },
+      { id: 2, name: "UpdatedEntity2", _id: "doc2" },
+    ];
+    const updateStats = { modifiedCount: 2 } as UpdateStats;
+
+    (dataContext.mapper.toModel as jest.Mock)
+      .mockReturnValueOnce(documents[0])
+      .mockReturnValueOnce(documents[1]);
+    (dataContext.source.update as jest.Mock).mockResolvedValueOnce(updateStats);
+
+    const result = await repository.update(...entities);
+
+    expect(dataContext.mapper.toModel).toHaveBeenNthCalledWith(1, entities[0]);
+    expect(dataContext.mapper.toModel).toHaveBeenNthCalledWith(2, entities[1]);
+    expect(dataContext.source.update).toHaveBeenCalledWith({
+      updates: documents,
+      where: [
+        new Where().valueOf("id").isEq(1),
+        new Where().valueOf("id").isEq(2),
+      ],
+      methods: [UpdateMethod.UpdateOne, UpdateMethod.UpdateOne],
+    });
+    expect(result).toEqual(Result.withSuccess(updateStats));
+  });
+
+  test("should update each entity by id when an entity array is provided", async () => {
+    const entities = [
+      { id: 1, name: "UpdatedEntity1" },
+      { id: 2, name: "UpdatedEntity2" },
+    ];
+    const documents = [
+      { id: 1, name: "UpdatedEntity1", _id: "doc1" },
+      { id: 2, name: "UpdatedEntity2", _id: "doc2" },
+    ];
+    const updateStats = { modifiedCount: 2 } as UpdateStats;
+
+    (dataContext.mapper.toModel as jest.Mock)
+      .mockReturnValueOnce(documents[0])
+      .mockReturnValueOnce(documents[1]);
+    (dataContext.source.update as jest.Mock).mockResolvedValueOnce(updateStats);
+
+    const result = await repository.update(entities);
+
+    expect(dataContext.source.update).toHaveBeenCalledWith({
+      updates: documents,
+      where: [
+        new Where().valueOf("id").isEq(1),
+        new Where().valueOf("id").isEq(2),
+      ],
+      methods: [UpdateMethod.UpdateOne, UpdateMethod.UpdateOne],
+    });
+    expect(result).toEqual(Result.withSuccess(updateStats));
+  });
+
+  test("should fail entity update before source call when entity has no id", async () => {
+    const result = await repository.update({ name: "UpdatedEntity" });
+
+    expect(result.isFailure()).toBe(true);
+    expect(result.getErrorMessage()).toContain(
+      "Cannot update entity without an id"
+    );
+    expect(dataContext.source.update).not.toHaveBeenCalled();
+  });
+
   test("should handle remove with RemoveParams", async () => {
     const params = new RemoveParams();
     const removeStats = { deletedCount: 1 } as RemoveStats;
     (dataContext.source.remove as jest.Mock).mockResolvedValueOnce(removeStats);
     const result = await repository.remove(params);
     expect(result).toEqual(Result.withSuccess(removeStats));
+  });
+
+  test("should remove entity by id when entity is provided", async () => {
+    const entity = { id: 1, name: "Entity1" };
+    const removeStats = { deletedCount: 1 } as RemoveStats;
+
+    (dataContext.source.remove as jest.Mock).mockResolvedValueOnce(removeStats);
+
+    const result = await repository.remove(entity);
+
+    expect(dataContext.source.remove).toHaveBeenCalledWith({
+      where: new Where().valueOf("id").isEq(1),
+    });
+    expect(result).toEqual(Result.withSuccess(removeStats));
+  });
+
+  test("should remove entities by id when entities are provided", async () => {
+    const entities = [
+      { id: 1, name: "Entity1" },
+      { id: 2, name: "Entity2" },
+    ];
+    const removeStats = { deletedCount: 2 } as RemoveStats;
+
+    (dataContext.source.remove as jest.Mock).mockResolvedValueOnce(removeStats);
+
+    const result = await repository.remove(...entities);
+
+    expect(dataContext.source.remove).toHaveBeenCalledWith({
+      where: new Where().valueOf("id").isIn([1, 2]),
+    });
+    expect(result).toEqual(Result.withSuccess(removeStats));
+  });
+
+  test("should remove entities by id when an entity array is provided", async () => {
+    const entities = [
+      { id: 1, name: "Entity1" },
+      { id: 2, name: "Entity2" },
+    ];
+    const removeStats = { deletedCount: 2 } as RemoveStats;
+
+    (dataContext.source.remove as jest.Mock).mockResolvedValueOnce(removeStats);
+
+    const result = await repository.remove(entities);
+
+    expect(dataContext.source.remove).toHaveBeenCalledWith({
+      where: new Where().valueOf("id").isIn([1, 2]),
+    });
+    expect(result).toEqual(Result.withSuccess(removeStats));
+  });
+
+  test("should fail entity remove before source call when entity has no id", async () => {
+    const result = await repository.remove({ name: "Entity1" });
+
+    expect(result.isFailure()).toBe(true);
+    expect(result.getErrorMessage()).toContain(
+      "Cannot remove entity without an id"
+    );
+    expect(dataContext.source.remove).not.toHaveBeenCalled();
   });
 
   test("should handle update errors", async () => {

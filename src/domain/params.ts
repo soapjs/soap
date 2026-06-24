@@ -231,10 +231,12 @@ export class RemoveParams {
    * @returns {boolean} True if the object is a RemoveParams, false otherwise.
    */
   static isRemoveParams(obj: any): obj is RemoveParams {
+    const keys = obj ? Object.keys(obj) : [];
     return (
       obj &&
       typeof obj.build !== "function" &&
-      Object.keys(obj).length > 0 &&
+      keys.length > 0 &&
+      keys.every((key) => key === "where") &&
       (obj.where === undefined || typeof obj.where === "object")
     );
   }

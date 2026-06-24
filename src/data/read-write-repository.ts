@@ -5,8 +5,11 @@ import { Result } from "../common/result";
 import { UpdateStats, RemoveStats } from "../domain/types";
 import {
   RemoveParams,
+  UpdateMethod,
   UpdateParams,
 } from "../domain/params";
+import { Where } from "../domain/where";
+import { RepositoryMethodError } from "../domain/errors";
 import {
   AnyContext,
   BlockchainContext,
@@ -46,6 +49,15 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
    * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
    */
   public async update(paramsOrQuery: UpdateParams<Partial<EntityType>> | RepositoryQuery): Promise<Result<UpdateStats>>;
+
+  /**
+   * Updates entities in the data source.
+   *
+   * @param {Partial<EntityType>[]} entities The entities to be updated.
+   *
+   * @returns {Promise<Result<UpdateStats>>} The result of the update operation, containing the update statistics or an error.
+   */
+  public async update(entities: Partial<EntityType>[]): Promise<Result<UpdateStats>>;
   
   /**
    * Updates entities in the data source.
@@ -57,18 +69,17 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
   public async update(...entities: Partial<EntityType>[]): Promise<Result<UpdateStats>>;
   
   public async update(
-    paramsOrQueryOrEntity: UpdateParams<Partial<EntityType>> | RepositoryQuery | Partial<EntityType>,
+    paramsOrQueryOrEntity: UpdateParams<Partial<EntityType>> | RepositoryQuery | Partial<EntityType> | Partial<EntityType>[],
     ...moreEntities: Partial<EntityType>[]
   ): Promise<Result<UpdateStats>> {
     try {
       let query: any;
 
-      if (moreEntities.length > 0) {
-        const allEntities = [paramsOrQueryOrEntity, ...moreEntities];
-        const documents = allEntities.map((entity) =>
-          this.context.mapper.toModel(entity as EntityType)
+      if (Array.isArray(paramsOrQueryOrEntity) || moreEntities.length > 0) {
+        query = this.createUpdateQueryFromEntities(
+          paramsOrQueryOrEntity as Partial<EntityType> | Partial<EntityType>[],
+          moreEntities
         );
-        query = { updates: documents };
       } else if (UpdateParams.isUpdateParams(paramsOrQueryOrEntity)) {
         const { updates, ...rest } = paramsOrQueryOrEntity;
         const documents = updates.map((update) =>
@@ -78,8 +89,7 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
       } else if (RepositoryQuery.isQueryBuilder(paramsOrQueryOrEntity)) {
         query = paramsOrQueryOrEntity.build();
       } else {
-        const documents = [this.context.mapper.toModel(paramsOrQueryOrEntity as EntityType)];
-        query = { updates: documents };
+        query = this.createUpdateQueryFromEntities(paramsOrQueryOrEntity);
       }
 
       const stats = await this.context.source.update(query);
@@ -121,6 +131,15 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
    * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
    */
   public async remove(paramsOrQuery: RemoveParams | RepositoryQuery): Promise<Result<RemoveStats>>;
+
+  /**
+   * Removes entities from the data source.
+   *
+   * @param {EntityType[]} entities The entities to be removed.
+   *
+   * @returns {Promise<Result<RemoveStats>>} The result of the remove operation, containing the removal statistics or an error.
+   */
+  public async remove(entities: EntityType[]): Promise<Result<RemoveStats>>;
   
   /**
    * Removes entities from the data source.
@@ -132,25 +151,23 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
   public async remove(...additionalEntities: EntityType[]): Promise<Result<RemoveStats>>;
   
   public async remove(
-    paramsOrQueryOrEntity: RemoveParams | RepositoryQuery | EntityType,
+    paramsOrQueryOrEntity: RemoveParams | RepositoryQuery | EntityType | EntityType[],
     ...moreEntities: EntityType[]
   ): Promise<Result<RemoveStats>> {
     try {
       let query: any;
 
-      if (moreEntities.length > 0) {
-        const allEntities = [paramsOrQueryOrEntity as EntityType, ...moreEntities];
-        const documents = allEntities.map((entity) =>
-          this.context.mapper.toModel(entity)
+      if (Array.isArray(paramsOrQueryOrEntity) || moreEntities.length > 0) {
+        query = this.createRemoveQueryFromEntities(
+          paramsOrQueryOrEntity as EntityType | EntityType[],
+          moreEntities
         );
-        query = { entities: documents };
       } else if (RemoveParams.isRemoveParams(paramsOrQueryOrEntity)) {
         query = paramsOrQueryOrEntity;
       } else if (RepositoryQuery.isQueryBuilder(paramsOrQueryOrEntity)) {
         query = paramsOrQueryOrEntity.build();
       } else {
-        const documents = [this.context.mapper.toModel(paramsOrQueryOrEntity as EntityType)];
-        query = { entities: documents };
+        query = this.createRemoveQueryFromEntities(paramsOrQueryOrEntity as EntityType);
       }
 
       const stats = await this.context.source.remove(query);
@@ -159,6 +176,67 @@ export class ReadWriteRepository<EntityType, DocumentType = unknown>
     } catch (error) {
       return Result.withFailure(Failure.fromError(error));
     }
+  }
+
+  private createUpdateQueryFromEntities(
+    firstEntityOrEntities: Partial<EntityType> | Partial<EntityType>[],
+    moreEntities: Partial<EntityType>[] = []
+  ) {
+    const entities = this.normalizeEntities(firstEntityOrEntities, moreEntities);
+    const ids = entities.map((entity) => this.getEntityId(entity, "update"));
+    const documents = entities.map((entity) =>
+      this.context.mapper.toModel(entity as EntityType)
+    );
+
+    return {
+      updates: documents,
+      where: ids.map((id) => new Where().valueOf("id").isEq(id)),
+      methods: ids.map(() => UpdateMethod.UpdateOne),
+    };
+  }
+
+  private createRemoveQueryFromEntities(
+    firstEntityOrEntities: EntityType | EntityType[],
+    moreEntities: EntityType[] = []
+  ) {
+    const entities = this.normalizeEntities(firstEntityOrEntities, moreEntities);
+    const ids = entities.map((entity) => this.getEntityId(entity, "remove"));
+    const where =
+      ids.length === 1
+        ? new Where().valueOf("id").isEq(ids[0])
+        : new Where().valueOf("id").isIn(ids);
+
+    return { where };
+  }
+
+  private normalizeEntities<T>(
+    firstEntityOrEntities: T | T[],
+    moreEntities: T[] = []
+  ): T[] {
+    const entities = Array.isArray(firstEntityOrEntities)
+      ? [...firstEntityOrEntities, ...moreEntities]
+      : [firstEntityOrEntities, ...moreEntities];
+
+    if (entities.length === 0) {
+      throw new RepositoryMethodError("No entities were provided.");
+    }
+
+    return entities;
+  }
+
+  private getEntityId(
+    entity: Partial<EntityType> | EntityType,
+    operation: "update" | "remove"
+  ): unknown {
+    const id = (entity as { id?: unknown } | null | undefined)?.id;
+
+    if (id === undefined || id === null) {
+      throw new RepositoryMethodError(
+        `Cannot ${operation} entity without an id.`
+      );
+    }
+
+    return id;
   }
 }
 
