@@ -7,6 +7,7 @@ export * from "./read-repository";
 export * from "./read-write-repository";
 export * from "./database-session";
 export * from "./database-session-registry";
+export * from "./noop-database-session-registry";
 export * from "./property-transformer";
 export * from "./meta-mapper";
 export * from "./cache-manager";
