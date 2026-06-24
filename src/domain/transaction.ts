@@ -3,6 +3,12 @@ import { Result } from "../common/result";
 import { DatabaseContext } from "../data/repository-data-contexts";
 import { isReadWriteRepository } from "../data/read-write-repository";
 import { DatabaseSession } from "../data/database-session";
+import { DatabaseSessionRegistry } from "../data/database-session-registry";
+
+export type TransactionSessionRef = {
+  session: DatabaseSession;
+  registry: DatabaseSessionRegistry;
+};
 
 /**
  * Abstract class representing a transaction.
@@ -16,6 +22,7 @@ export abstract class Transaction<T = unknown> {
 
   /** List of database sessions associated with the transaction. */
   protected sessions: DatabaseSession[] = [];
+  protected sessionRefs: TransactionSessionRef[] = [];
   protected components: unknown[] = [];
 
   /**
@@ -48,8 +55,10 @@ export abstract class Transaction<T = unknown> {
           DatabaseContext.isDatabaseContext(component.context) &&
           !component.context.sessions.hasSession(this.id)
         ) {
-          const session = component.context.sessions.createSession(this.id);
+          const registry = component.context.sessions;
+          const session = registry.createSession(this.id);
           this.sessions.push(session);
+          this.sessionRefs.push({ session, registry });
         }
       }
     });
@@ -58,10 +67,19 @@ export abstract class Transaction<T = unknown> {
   }
 
   /**
+   * Returns session references with their owning registries.
+   * Used by TransactionRunner to dispose registry-owned resources.
+   */
+  public getSessionRefs(): TransactionSessionRef[] {
+    return this.sessionRefs;
+  }
+
+  /**
    * Disposes of the database sessions.
    */
   dispose() {
     this.sessions = [];
+    this.sessionRefs = [];
   }
 
   /**

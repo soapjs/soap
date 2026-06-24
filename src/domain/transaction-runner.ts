@@ -1,6 +1,6 @@
 import { Result } from "../common/result";
 import { DatabaseSession } from "../data/database-session";
-import { Transaction } from "./transaction";
+import { Transaction, TransactionSessionRef } from "./transaction";
 import { TransactionScope } from "./transaction-scope";
 
 /**
@@ -36,29 +36,76 @@ export class TransactionRunner {
    * @returns {Promise<Result<T>>} - The result of the transaction.
    */
   async run<T = unknown>(transaction: Transaction<T>): Promise<Result<T>> {
-    let result: Result<T>;
-    let sessions: DatabaseSession[];
-
     return this.transactionScope.run(transaction.id, async () => {
+      let result: Result<T>;
+      let sessions: DatabaseSession[] = [];
+      const startedSessions: DatabaseSession[] = [];
+      let transactionError: unknown;
+      let cleanupError: unknown;
+
       try {
         sessions = transaction.init();
+
+        for (const session of sessions) {
+          await session.startTransaction();
+          startedSessions.push(session);
+        }
+
         result = await transaction.execute();
 
         for (const session of sessions) {
           await session.commitTransaction();
-          await session.end();
         }
       } catch (error) {
-        for (const session of sessions) {
-          await session.rollbackTransaction();
-          await session.end();
+        transactionError = error;
+
+        for (const session of startedSessions) {
+          try {
+            await session.rollbackTransaction();
+          } catch {
+            // Preserve the original transaction failure.
+          }
         }
-        result = Result.withFailure(error);
+
+        result = Result.withFailure(this.toError(error));
       } finally {
+        cleanupError = await this.deleteTransactionSessions(
+          transaction.getSessionRefs()
+        );
         transaction.dispose();
+      }
+
+      if (!transactionError && cleanupError) {
+        return Result.withFailure(this.toError(cleanupError));
       }
 
       return result;
     });
+  }
+
+  private async deleteTransactionSessions(
+    sessionRefs: TransactionSessionRef[]
+  ): Promise<unknown> {
+    let firstError: unknown;
+
+    for (const sessionRef of sessionRefs) {
+      try {
+        await sessionRef.registry.deleteSession(sessionRef.session.id);
+      } catch (error) {
+        if (!firstError) {
+          firstError = error;
+        }
+      }
+    }
+
+    return firstError;
+  }
+
+  private toError(error: unknown): Error {
+    if (error instanceof Error) {
+      return error;
+    }
+
+    return new Error(String(error));
   }
 }

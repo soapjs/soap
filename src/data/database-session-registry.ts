@@ -25,7 +25,7 @@ export interface DatabaseSessionRegistry {
    * @param {string} id - The unique identifier of the session to be deleted.
    * @param {...unknown[]} args - Additional arguments required for session deletion.
    */
-  deleteSession(id: string, ...args: unknown[]): void;
+  deleteSession(id: string, ...args: unknown[]): void | Promise<void>;
 
   /**
    * Retrieves a database session by its identifier.

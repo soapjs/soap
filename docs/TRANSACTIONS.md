@@ -44,10 +44,12 @@ The `Transaction` class is the abstract base class for all transactions. It mana
 abstract class Transaction<T = unknown> {
   public readonly id: string;           // Unique transaction ID
   protected sessions: DatabaseSession[]; // Database sessions
+  protected sessionRefs: TransactionSessionRef[]; // Sessions with owning registries
   protected components: unknown[];       // Components requiring sessions
 
   constructor(...args: unknown[]);      // Initialize with components
   public init(): DatabaseSession[];     // Initialize sessions
+  public getSessionRefs(): TransactionSessionRef[]; // Get sessions with registries
   public abstract execute(): Promise<Result<T>>; // Execute transaction
   public dispose(): void;               // Clean up resources
   public abort(message?: string): void; // Abort transaction
@@ -76,6 +78,61 @@ class TransactionRunner {
   async run<T>(transaction: Transaction<T>): Promise<Result<T>>;
 }
 ```
+
+#### Session Lifecycle
+
+`TransactionRunner.run()` owns the full lifecycle for every session created by
+`Transaction.init()`:
+
+```typescript
+const sessions = transaction.init();
+
+for (const session of sessions) {
+  await session.startTransaction();
+}
+
+try {
+  const result = await transaction.execute();
+
+  for (const session of sessions) {
+    await session.commitTransaction();
+  }
+
+  return result;
+} catch (error) {
+  for (const session of startedSessions) {
+    await session.rollbackTransaction();
+  }
+
+  return Result.withFailure(error);
+} finally {
+  for (const sessionRef of transaction.getSessionRefs()) {
+    await sessionRef.registry.deleteSession(sessionRef.session.id);
+  }
+
+  transaction.dispose();
+}
+```
+
+`Transaction.init()` remains synchronous. Storage adapters that need async
+resources should create a lightweight or lazy `DatabaseSession` synchronously,
+then acquire the real connection/client session in `startTransaction()`.
+
+#### Adapter Registry Contract
+
+`DatabaseSessionRegistry.createSession(transaction.id)` is called once per
+registry for a transaction. Multiple repositories that share the same registry
+reuse one session. Different registries in the same transaction receive separate
+sessions with the same transaction id.
+
+`DatabaseSessionRegistry.deleteSession(id)` may return `void` or
+`Promise<void>`. Adapter implementations should use it for registry-owned
+cleanup, such as ending a MongoDB client session or releasing a SQL connection
+back to the pool.
+
+Multi-registry transactions are coordinated best-effort by Soap. They are not
+distributed two-phase commits, so a commit failure after another registry has
+already committed cannot be atomically rolled back by the framework.
 
 ### TransactionScope
 
