@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/soapjs/soap/main/docs/assets/soap_logo.png" alt="SoapJS logo" width="180" />
+</p>
+
 # SoapJS
 
 **Enterprise-ready Clean Architecture framework for TypeScript**
