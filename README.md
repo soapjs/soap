@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/soapjs/soap/main/docs/assets/soap_logo.png" alt="SoapJS logo" width="180" />
+  <img src="https://raw.githubusercontent.com/soapjs/soap/main/docs/assets/soap_logo.png" alt="SoapJS logo" width="360" />
 </p>
 
 # SoapJS
