@@ -4,6 +4,7 @@ node_modules/
 test/
 tests/
 coverage/
+docs/assets/
 .eslintignore
 .eslintrc.js
 tsconfig.build.json
