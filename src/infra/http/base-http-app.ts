@@ -16,8 +16,10 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   // Brand property for runtime type checking
   readonly __isHttpApp = true;
 
+  private static readonly DEFAULT_SHUTDOWN_TIMEOUT_MS = 10_000;
   private static processHandlersRegistered = false;
   private static activeApps: Set<BaseHttpApp> = new Set();
+  private static processShutdownPromise?: Promise<void>;
 
   protected routeRegistry: RouteRegistry;
   protected middlewareRegistry: MiddlewareRegistry;
@@ -25,6 +27,7 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
   protected pluginManager: PluginManager;
   protected logger: Logger;
   protected state: 'stopped' | 'starting' | 'started' | 'stopping' = 'stopped';
+  private gracefulShutdownPromise?: Promise<void>;
   /**
    * External resources to drain on shutdown, in registration order.
    *
@@ -196,35 +199,98 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
     if (BaseHttpApp.processHandlersRegistered) return;
     BaseHttpApp.processHandlersRegistered = true;
 
+    const shutdownTimeoutMs = BaseHttpApp.getShutdownTimeoutMs();
+
     const shutdown = async (signals: string[]) => {
-      for (const app of BaseHttpApp.activeApps) {
-        try {
-          await app.gracefulShutdown(signals);
-        } catch (error) {
-          logger.error('Graceful shutdown failed:', error);
+      if (BaseHttpApp.processShutdownPromise) {
+        logger.warn(`Graceful shutdown already in progress (${signals.join(', ')} ignored).`);
+        return BaseHttpApp.processShutdownPromise;
+      }
+
+      BaseHttpApp.processShutdownPromise = (async () => {
+        for (const app of BaseHttpApp.activeApps) {
+          try {
+            await app.gracefulShutdown(signals);
+          } catch (error) {
+            logger.error('Graceful shutdown failed:', error);
+          }
         }
+      })();
+
+      try {
+        await BaseHttpApp.processShutdownPromise;
+      } finally {
+        BaseHttpApp.processShutdownPromise = undefined;
       }
     };
 
     ['SIGTERM', 'SIGINT', 'SIGUSR2'].forEach(signal => {
       process.on(signal, async () => {
+        if (BaseHttpApp.processShutdownPromise) {
+          logger.warn(`Received ${signal} while graceful shutdown is still running. Forcing process exit.`);
+          process.exit(BaseHttpApp.signalExitCode(signal));
+        }
+
         logger.info(`Received ${signal}, starting graceful shutdown...`);
-        await shutdown([signal]);
-        process.exit(0);
+        const timedOut = await BaseHttpApp.runWithShutdownTimeout(
+          shutdown([signal]),
+          shutdownTimeoutMs,
+          logger,
+        );
+        process.exit(timedOut ? 1 : 0);
       });
     });
 
     process.on('uncaughtException', async (error) => {
       logger.error('Uncaught Exception:', error);
-      await shutdown(['uncaughtException']);
+      await BaseHttpApp.runWithShutdownTimeout(shutdown(['uncaughtException']), shutdownTimeoutMs, logger);
       process.exit(1);
     });
 
     process.on('unhandledRejection', async (reason, promise) => {
       logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      await shutdown(['unhandledRejection']);
+      await BaseHttpApp.runWithShutdownTimeout(shutdown(['unhandledRejection']), shutdownTimeoutMs, logger);
       process.exit(1);
     });
+  }
+
+  private static getShutdownTimeoutMs(): number {
+    const rawValue = process.env.SOAP_GRACEFUL_SHUTDOWN_TIMEOUT_MS;
+    const timeoutMs = rawValue ? Number(rawValue) : BaseHttpApp.DEFAULT_SHUTDOWN_TIMEOUT_MS;
+    return Number.isFinite(timeoutMs) && timeoutMs > 0
+      ? timeoutMs
+      : BaseHttpApp.DEFAULT_SHUTDOWN_TIMEOUT_MS;
+  }
+
+  private static signalExitCode(signal: string): number {
+    if (signal === 'SIGINT') return 130;
+    if (signal === 'SIGTERM') return 143;
+    return 1;
+  }
+
+  private static async runWithShutdownTimeout(
+    shutdown: Promise<void>,
+    timeoutMs: number,
+    logger: Logger,
+  ): Promise<boolean> {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+      return await Promise.race([
+        shutdown.then(() => false),
+        new Promise<boolean>((resolve) => {
+          timeout = setTimeout(() => {
+            logger.error(`Graceful shutdown timed out after ${timeoutMs}ms. Forcing process exit.`);
+            resolve(true);
+          }, timeoutMs);
+          timeout.unref?.();
+        }),
+      ]);
+    } finally {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    }
   }
 
   /**
@@ -232,6 +298,17 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
    * @param signals - The signals that triggered the shutdown (SIGTERM, SIGINT, etc.)
    */
   async gracefulShutdown(signals?: string[]): Promise<void> {
+    if (this.gracefulShutdownPromise) {
+      this.logger.warn('Graceful shutdown already in progress.');
+      return this.gracefulShutdownPromise;
+    }
+
+    this.state = 'stopping';
+    this.gracefulShutdownPromise = this.runGracefulShutdown(signals);
+    return this.gracefulShutdownPromise;
+  }
+
+  private async runGracefulShutdown(signals?: string[]): Promise<void> {
     const signalText = signals && signals.length > 0 ? ` (${signals.join(', ')})` : '';
     this.logger.info(`Starting graceful shutdown${signalText}...`);
 
@@ -265,9 +342,15 @@ export abstract class BaseHttpApp<Framework = any> implements HttpApp<Framework>
       }
 
       this.logger.info('Graceful shutdown completed successfully');
+      BaseHttpApp.activeApps.delete(this);
+      this.state = 'stopped';
     } catch (error) {
       this.logger.error('Error during graceful shutdown:', error);
       this.logger.info('Graceful shutdown completed with errors');
+      BaseHttpApp.activeApps.delete(this);
+      this.state = 'stopped';
+    } finally {
+      this.gracefulShutdownPromise = undefined;
     }
   }
 
