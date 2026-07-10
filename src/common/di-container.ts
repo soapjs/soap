@@ -38,7 +38,7 @@ export class DIContainer {
       token,
       useClass: constructor,
       scope: options?.scope || Scope.SINGLETON,
-      dependencies: options?.dependencies || []
+      dependencies: options?.dependencies
     });
   }
 
@@ -127,8 +127,9 @@ export class DIContainer {
     }
 
     if (provider.useClass) {
-      // Try to auto-resolve dependencies from constructor
-      const dependencies = this.autoResolveDependencies(provider.useClass);
+      const dependencies = provider.dependencies !== undefined
+        ? this.resolveDependencies(provider.dependencies)
+        : this.autoResolveDependencies(provider.useClass);
       return new provider.useClass(...dependencies);
     }
 
@@ -146,43 +147,7 @@ export class DIContainer {
    * Auto-resolve dependencies from constructor
    */
   private autoResolveDependencies(constructor: new (...args: any[]) => any): any[] {
-    const paramTypes = getParamTypes(constructor);
-    const injectMetadata = getInjectMetadata(constructor);
-    const dependencies: any[] = [];
-
-    for (let i = 0; i < paramTypes.length; i++) {
-      const paramType = paramTypes[i];
-
-      // Check if there's @Inject metadata for this parameter.
-      // Tokens live under `parameters` (not `constructor` — see Inject decorator).
-      const injectTokens: string[] | undefined =
-        Array.isArray(injectMetadata?.parameters) ? injectMetadata.parameters : undefined;
-
-      if (injectTokens && injectTokens[i] !== undefined) {
-        try {
-          dependencies.push(this.get(injectTokens[i]));
-        } catch {
-          dependencies.push(undefined);
-        }
-      } else if (paramType && paramType.name !== 'Object') {
-        // Fallback to type name resolution
-        try {
-          dependencies.push(this.get(paramType.name));
-        } catch {
-          // If can't resolve by type name, try to resolve by constructor name
-          try {
-            dependencies.push(this.get(constructor.name));
-          } catch {
-            // If still can't resolve, pass undefined
-            dependencies.push(undefined);
-          }
-        }
-      } else {
-        dependencies.push(undefined);
-      }
-    }
-
-    return dependencies;
+    return this.resolveDependencies(this.extractDependencies(constructor));
   }
 
   /**
@@ -227,7 +192,9 @@ export class DIContainer {
       throw new Error(`Class ${constructor.name} is not marked as @Injectable`);
     }
 
-    const dependencies = this.extractDependencies(constructor);
+    const dependencies = metadata.dependencies?.length
+      ? metadata.dependencies
+      : this.extractDependencies(constructor);
     
     return this.bindClass(metadata.token, constructor, {
       scope: metadata.scope,
@@ -246,16 +213,29 @@ export class DIContainer {
     const injectTokens: string[] | undefined =
       Array.isArray(injectMetadata?.parameters) ? injectMetadata.parameters : undefined;
 
-    for (let i = 0; i < paramTypes.length; i++) {
+    const dependencyCount = Math.max(
+      paramTypes.length,
+      injectTokens?.length ?? 0,
+      constructor.length
+    );
+
+    for (let i = 0; i < dependencyCount; i++) {
       const token = injectTokens?.[i];
       if (token) {
         dependencies.push(token);
+        continue;
+      }
+
+      // Try to resolve by type name
+      const paramType = paramTypes[i];
+      if (paramType && paramType.name !== 'Object') {
+        dependencies.push(paramType.name);
       } else {
-        // Try to resolve by type name
-        const paramType = paramTypes[i];
-        if (paramType && paramType.name !== 'Object') {
-          dependencies.push(paramType.name);
-        }
+        throw new Error(
+          `Cannot resolve constructor parameter #${i} of ${constructor.name}: ` +
+          'no @Inject token and no emitted design:paramtypes. ' +
+          'Add @Inject(<token>) or run under a compiler that emits decorator metadata.'
+        );
       }
     }
 
